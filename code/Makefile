@@ -13,9 +13,6 @@ HFILES = crun.h rutil.h cycletimer.h
 
 GFILES = gengraph.py grun.py rutil.py sim.py viz.py  regress.py benchmark.py grade.py
 
-TURBO = turboshake
-TFILES = turboshake.c cycletimer.c
-
 
 DFILES = $(DDIR)/g-t3600.gph $(DDIR)/g-t32400.gph $(DDIR)/g-t4.gph $(DDIR)/g-t400.gph \
 	 $(DDIR)/g-u3600.gph $(DDIR)/g-u32400.gph $(DDIR)/g-u4.gph $(DDIR)/g-u400.gph 
@@ -25,7 +22,7 @@ RFILES  = $(DDIR)/r-3600-d10.rats  $(DDIR)/r-3600-u10.rats \
 	$(DDIR)/r-4-d1.rats  $(DDIR)/r-4-u1.rats \
 	$(DDIR)/r-400-d10.rats $(DDIR)/r-400-u10.rats 
 
-all: crun crun-mpi $(TURBO)
+all: crun crun-mpi
 
 crun: crun-seq
 	cp -p crun-seq crun
@@ -35,9 +32,6 @@ crun-seq: $(CFILES) $(HFILES)
 
 crun-mpi: $(CFILES) $(XCFILES) $(HFILES) $(XHFILES)
 	$(MPICC) $(CFLAGS) $(MPI) -o crun-mpi $(CFILES) $(XCFILES) $(LDFLAGS)
-
-$(TURBO): $(TFILES)
-	$(CC) $(CFLAGS) -fopenmp -o $(TURBO) $(TFILES)
 
 demo1: grun.py
 	@echo "Running Python simulator with text visualization.  Synchronous mode."
@@ -83,4 +77,4 @@ clean:
 	rm -f *~ *.pyc
 	rm -rf *.dSYM
 	rm -f *.tgz
-	rm -f crun crun-seq crun-omp crun-mpi
+	rm -f crun crun-seq crun-mpi

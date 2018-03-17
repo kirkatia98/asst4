@@ -15,7 +15,10 @@
 # Go to the directory from which you submitted your job
 cd $PBS_O_WORKDIR
 
-# Execute the performance evaluation program and store summary in benchmark.out
-./benchmark.py -f benchmark.out
+# Execute the performance evaluation program and store summary in benchmark-XXXX.out
+# (XXXX will get replaced by randomly generated 4-digit sequence)
+# The "-a o" option instructs it to use processor affinity directives that are compatible
+# with the version of MPI running on the Latedays nodes
+./benchmark.py -a o -f benchmark-XXXX.out
 
 

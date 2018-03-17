@@ -6,24 +6,25 @@ import os
 import getopt
 import math
 import datetime
-import time
+import socket
+import random
 
 import grade
 
 def usage(fname):
-    ustring = "Usage: %s [-h] [-s SCALE] [-u UPDATELIST] [-f OUTFILE] [-S SSECS] [-T TSECS]" % fname
+    ustring = "Usage: %s [-h] [-a (x|o|n)] [-s SCALE] [-u UPDATELIST] [-f OUTFILE]" % fname
     ustring += " [-p PROCESSLIMIT]"
     print ustring 
     print "(All lists given as colon-separated text.)"
     print "    -h              Print this message"
+    print "    -a (x|o|n)      Set processor affinity: x=None, o=Old flags, n=New flags"
     print "    -s SCALE        Reduce number of steps in each benchmark by specified factor"
     print "    -u UPDATELIST   Specify update modes(s):"
     print "       r: rat order"
     print "       s: synchronous"
     print "       b: batch"
     print "    -f OUTFILE      Create output file recording measurements"
-    print "    -S SSECS        Let processor cool down by sleeping for SSECS seconds"
-    print "    -T TSECS        Stimulate Turboboost by running job for TSECS seconds"
+    print "         If file name contains field of form XX..X, will replace with ID having that many digits"
     print "    -p PROCESSLIMIT Specify upper limit on number of MPI processes"
     print "       If > 1, will run crun-mpi.  Else will run crun"
     sys.exit(0)
@@ -42,15 +43,33 @@ mpiSimProg = "./crun-mpi"
 dataDir = "./data/"
 outFile = None
 
-# Program to stimulate Turboboost
-turboProg = "./turboshake"
-# How long to sleep before Turboboost
-sleepSeconds = 10
-# How long to run program to kick into Turboboost
-turboSeconds = 2
+# Additional flags to control MPI 
+mpiCmd = ["mpirun"]
+
+newMpiFlags = ["-map-by", "core", "-bind-to", "core"]
+oldMpiFlags = ["-bycore", "-bind-to-core"]
 
 # Dictionary of geometric means, indexed by (mode, threads)
 gmeanDict = {}
+
+# Host IP addresses on Latedays cluster, and their measured performance
+hostDict = {
+    '10.22.1.240' : 'fast',
+    '10.22.1.241' : 'slow',
+    '10.22.1.242' : 'slow',
+    '10.22.1.243' : 'normal',
+    '10.22.1.244' : 'normal',
+    '10.22.1.245' : 'slow',
+    '10.22.1.246' : 'fast',
+    '10.22.1.247' : 'normal',
+    '10.22.1.248' : 'normal',
+    '10.22.1.249' : 'normal',
+    '10.22.1.250' : 'slow',
+    '10.22.1.251' : 'normal',
+    '10.22.1.252' : 'normal',
+    '10.22.1.253' : 'normal',
+    '128.2.204.183' : 'normal'  # Latedays head node
+    }
 
 def outmsg(s, noreturn = False):
     if len(s) > 0 and s[-1] != '\n' and not noreturn:
@@ -93,9 +112,11 @@ benchmarkList = [
 synchRunList = [(1, 1000), (12, 1000)]
 otherRunList = [(1, 500), (12, 500)]
 
-def cmd(graphSize, graphType, ratType, loadFactor, stepCount, updateType, processCount, otherArgs = []):
+def cmd(graphSize, graphType, ratType, loadFactor, stepCount, updateType, processCount, mpiFlags, otherArgs = []):
     global bcount, logSum
     global cacheKey
+    # File number of standard output
+    stdoutFileNumber = 1
     updateFlag = UpdateMode.flags[updateType]
     params = ["%5d" % graphSize, graphType, "%4d" % loadFactor, ratType, str(stepCount), updateFlag]
     cacheKey = ":".join(params)
@@ -105,57 +126,52 @@ def cmd(graphSize, graphType, ratType, loadFactor, stepCount, updateType, proces
     ratFileName = dataDir + "r-" + sizeName + '-' + ratType + str(loadFactor) + ".rats"
     clist = runFlags + ["-g", graphFileName, "-r", ratFileName, "-u", updateFlag, "-n", str(stepCount), "-i", str(stepCount)] + otherArgs
     if processCount > 1:
-        gcmd = ["mpirun", "-np", str(processCount), mpiSimProg] + clist
+        gcmd = mpiCmd + mpiFlags + ["-np", str(processCount), mpiSimProg] + clist
     else:
         gcmd = [simProg] + clist
     gcmdLine = " ".join(gcmd)
-    retcode = 1
-    tstart = datetime.datetime.now()
-    try:
-        # File number of standard output
-        stdoutFileNumber = 1
-        simProcess = subprocess.Popen(gcmd, stderr = stdoutFileNumber)
-        simProcess.wait()
-        retcode = simProcess.returncode
-    except Exception as e:
-        print "Execution of command '%s' failed. %s" % (gcmdLine, e)
-        return False
-    if retcode == 0:
-        delta = datetime.datetime.now() - tstart
-        secs = delta.seconds + 24 * 3600 * delta.days + 1e-6 * delta.microseconds
-        rops = int(graphSize * loadFactor) * stepCount
-        ssecs = "%.2f" % secs 
-        results.append(ssecs)
-        mrps = 1e-6 * float(rops)/secs
-        if mrps > 0:
-            logSum += math.log(mrps)
-            bcount += 1
-        smrps = "%7.2f" % mrps
-        results.append(smrps)
-        if cacheKey in resultCache:
-            speedup = mrps / resultCache[cacheKey] 
-            sspeedup = "(%5.2fX)" % speedup
-            results.append(sspeedup)
-        if processCount == 1:
-            resultCache[cacheKey] = mrps
-        pstring = marker + "\t".join(results)
-        outmsg(pstring)
-    else:
-        print "Execution of command '%s' gave return code %d" % (gcmdLine, retcode)
-        return False
+
+
+    # Legacy code to allow multiple trials
+    reps = 1
+    secs = 1e9
+    for r in range(reps):
+        tstart = datetime.datetime.now()
+        try:
+            simProcess = subprocess.Popen(gcmd, stderr = stdoutFileNumber)
+            simProcess.wait()
+            retcode = simProcess.returncode
+        except Exception as e:
+            outmsg("Execution of command '%s' failed. %s" % (gcmdLine, e))
+            return False
+        if retcode == 0:
+            delta = datetime.datetime.now() - tstart
+            tsecs = delta.seconds + 24 * 3600 * delta.days + 1e-6 * delta.microseconds
+            secs = min(secs, tsecs)
+        else:
+            outmsg("Execution of command '%s' gave return code %d" % (gcmdLine, retcode))
+            return False
+
+    rops = int(graphSize * loadFactor) * stepCount
+    ssecs = "%.2f" % secs 
+    results.append(ssecs)
+    mrps = 1e-6 * float(rops)/secs
+    if mrps > 0:
+        logSum += math.log(mrps)
+        bcount += 1
+    smrps = "%7.2f" % mrps
+    results.append(smrps)
+    if cacheKey in resultCache:
+        speedup = mrps / resultCache[cacheKey] 
+        sspeedup = "(%5.2fX)" % speedup
+        results.append(sspeedup)
+    if processCount == 1:
+        resultCache[cacheKey] = mrps
+    pstring = marker + "\t".join(results)
+    outmsg(pstring)
     return True
 
-def turbo():
-    if turboSeconds > 0:
-        if not os.path.exists(turboProg):
-            print "Warning.  Cannot find program %s" % turboProg
-            return
-        print "Running %s to sleep for %d seconds and then go active for %d seconds" % (turboProg, sleepSeconds, turboSeconds)
-        tcmd = [turboProg, '-s', str(sleepSeconds), '-t', str(turboSeconds)]
-        simProcess = subprocess.Popen(tcmd)
-        simProcess.wait()
-
-def sweep(updateType, processLimit, scale, otherArgs):
+def sweep(updateType, processLimit, scale, mpiFlags, otherArgs):
     runList = synchRunList if updateType == UpdateMode.synchronous else otherRunList
     for rparams in runList:
         reset()
@@ -167,13 +183,9 @@ def sweep(updateType, processLimit, scale, otherArgs):
         outmsg("\tNodes\tgtype\tlf\trtype\tsteps\tupdate\tprocs\tsecs\tMRPS")
         stepCount = stepCount / scale
         outmsg(nomarker + "---------" * 8)
-        if processCount == 1:
-            turbo()
         for bparams in benchmarkList:
-            if processCount > 1:
-                turbo()
             (graphSize, graphType, ratType, loadFactor) = bparams
-            cmd(graphSize, graphType, ratType, loadFactor, stepCount, updateType, processCount, otherArgs)
+            cmd(graphSize, graphType, ratType, loadFactor, stepCount, updateType, processCount, mpiFlags, otherArgs)
         if bcount > 0:
             gmean = math.exp(logSum/bcount)
             updateFlag = UpdateMode.flags[updateType]
@@ -181,26 +193,61 @@ def sweep(updateType, processLimit, scale, otherArgs):
             outmsg(marker + "Gmean\t\t\t\t\t%s\t%d\t\t%7.2f" % (updateFlag, processCount, gmean))
             outmsg(marker + "---------" * 8)
 
-    
+def classifyProcessor():
+    hostName = socket.gethostname()
+    hostIP = socket.gethostbyname(hostName)
+    status = hostDict[hostIP] if hostIP in hostDict else 'unknown'
+    if status == 'unknown':
+        outmsg("WARNING.  Running on unknown host %s (%s)" % (hostName, hostIP))
+    elif status != 'normal':
+        outmsg("WARNING.  Running on host %s (%s), which is known to be %s" % (hostName, hostIP, status))
+    else:
+        outmsg("INFO.  Running on normal host %s (%s)" % (hostName, hostIP))
+    return "Host %s(%s)" % (hostIP, status)
+               
+
+def generateFileName(template):
+    n = len(template)
+    ls = []
+    for i in range(n):
+        c = template[i]
+        if c == 'X':
+            c = chr(random.randint(ord('0'), ord('9')))
+        ls.append(c)
+    return "".join(ls)
+
 def run(name, args):
-    global outFile, sleepSeconds, turboSeconds
+    global outFile
     scale = 1
     updateList = [UpdateMode.batch, UpdateMode.synchronous]
-    optString = "hms:u:p:f:S:T:"
+    optString = "ha:s:u:p:f:"
     processLimit = 100
-    optlist, args = getopt.getopt(args, optString)
     otherArgs = []
+    mpiFlags = newMpiFlags
+    optlist, args = getopt.getopt(args, optString)
     for (opt, val) in optlist:
         if opt == '-h':
             usage(name)
         elif opt == '-s':
             scale = float(val)
+        elif opt == '-a':
+            if val == 'x':
+                mpiFlags = []
+            elif val == 'o':
+                mpiFlags = oldMpiFlags
+            elif val == 'n':
+                mpiFlags = newMpiFlags
+            else:
+                outmsg("Invalid MPI flag specifier '%s'" % val)
+                usage(name)
         elif opt == '-f':
+            fname = generateFileName(val)
             try:
-                outFile = open(val, "w")
+                outFile = open(fname, "w")
+                outmsg("Writing to file '%s'" % fname)
             except Exception as e:
                 outFile = None
-                outmsg("Couldn't open file '%s'" % val)
+                outmsg("Couldn't open file '%s'" % fname)
         elif opt == '-u':
             ulist = val.split(":")
             updateList = []
@@ -212,31 +259,28 @@ def run(name, args):
                 elif c == 'r':
                     updateList.append(UpdateMode.ratOrder)
                 else:
-                    print "Invalid update mode '%s'" % c
+                    outmsg("Invalid update mode '%s'" % c)
                     usage(name)
         elif opt == '-p':
             processLimit = int(val)
-        elif opt == '-S':
-            sleepSeconds = float(val)
-        elif opt == '-T':
-            turboSeconds = float(val)
         else:
-            print "Uknown option '%s'" % opt
+            outmsg("Uknown option '%s'" % opt)
             usage(name)
 
+    hostInfo = classifyProcessor()
     tstart = datetime.datetime.now()
 
     for u in updateList:
-        sweep(u, processLimit, scale, otherArgs)
+        sweep(u, processLimit, scale, mpiFlags, otherArgs)
     
     delta = datetime.datetime.now() - tstart
     secs = delta.seconds + 24 * 3600 * delta.days + 1e-6 * delta.microseconds
-    print "Total test time = %.2f secs." % secs
+    outmsg("Total test time = %.2f secs." % secs)
 
-    grade.grade(gmeanDict, sys.stdout)
+    grade.grade(gmeanDict, sys.stdout, hostInfo)
 
     if outFile:
-        grade.grade(gmeanDict, outFile)
+        grade.grade(gmeanDict, outFile, hostInfo)
         outFile.close()
 
 if __name__ == "__main__":

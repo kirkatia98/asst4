@@ -5,15 +5,15 @@ import math
 # Targets for speed (in MRPS)
 gmeanTarget = {
     ('b', 1) :      25.0,
-    ('s', 1) :      36.0,
-    ('b', 12) :     80.0,
-    ('s', 12) :    108.0,
+    ('s', 1) :      35.0,
+    ('b', 12) :     87.5,
+    ('s', 12) :    112.0,
     }
 
 # Targets for speedup
 speedupTarget = {
-    ('b', 1, 12) : 3.2,
-    ('s', 1, 12) : 3.0,
+    ('b', 1, 12) : 3.5,
+    ('s', 1, 12) : 3.2,
 }
 
 modes = ['b', 's']
@@ -38,7 +38,7 @@ def score(s, target, wt):
     return wt * (s-mins)/(maxs-mins)
 
 # Accept dictionary of MRPS measurements, each having (mode, parallel) as key
-def grade(gmeanDict, outf):
+def grade(gmeanDict, outf, info = ""):
     total = 0.0
     maxtotal = 0.0
     outf.write("---------" * 9 + "\n")
@@ -53,7 +53,11 @@ def grade(gmeanDict, outf):
             name = flagNames[m]
             target = gmeanTarget[(m,t)]
             val = score(s, target, wt)
-            outf.write("  Parallel = %d, Mode = %s, Achieved = %.2f, Target = %.2f, Score = %.2f/%.2f\n" % (t, name, s, target, val, wt))
+            outString = "   "
+            if info != "":
+                outString += info + ", "
+            outString += "Parallel = %d, Mode = %s, Achieved = %.2f, Target = %.2f, Score = %.2f/%.2f\n" % (t, name, s, target, val, wt)
+            outf.write(outString)
             total += val
     outf.write("Speedup Scores\n")
     params = speedupTarget.keys()
