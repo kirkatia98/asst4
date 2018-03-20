@@ -37,6 +37,9 @@ dataDir = "./data/"
 # cache for holding reference simulation results
 cacheDir = "./regression-cache/"
 
+# Limit on how many mismatches get reported
+mismatchLimit = 5
+
 # Series of tests to perform.
 # Each defined by:
 #  number of nodes
@@ -60,6 +63,12 @@ regressionList = [
     (3600, 't', 'u', 10, 4, 'b', 27),
     (3600, 't', 'd', 10, 6, 's', 28),
     ]
+
+extraRegressionList = [
+    (32400, 'u', 'u', 32, 2, 'b', 29),
+    (32400, 't', 'd', 32, 2, 's', 30)
+]
+
 
 def regressionName(params, standard = True):
     return ("ref" if standard else "tst") +  "-%.3d-%s-%s-%.3d-%.3d-%s-%.2d.txt" % params
@@ -114,6 +123,7 @@ def runSim(params, standard = True, processCount = 1, xflags = []):
     return True
 
 def checkFiles(refPath, testPath):
+    badLines = 0
     lineNumber = 0
     try:
         rf = open(refPath, 'r')
@@ -133,21 +143,26 @@ def checkFiles(refPath, testPath):
             if tline == "":
                 break
             else:
+                badLines += 1
                 sys.stderr.write("Mismatch at line %d.  File %s ended prematurely\n" % (lineNumber, refPath))
-                return False
+                break
         elif tline == "":
+            badLines += 1
             sys.stderr.write("Mismatch at line %d.  File %s ended prematurely\n" % (lineNumber, testPath))
-            return False
+            break
         if rline[-1] == '\n':
             rline = rline[:-1]
         if tline[-1] == '\n':
             tline = tline[:-1]
         if rline != tline:
-            sys.stderr.write("Mismatch at line %d.  File %s:'%s'.  File '%s':'%s'\n" % (lineNumber, refPath, rline, testPath, tline))
-            return False
+            badLines += 1
+            if badLines <= mismatchLimit:
+                sys.stderr.write("Mismatch at line %d.  File %s:'%s'.  File %s:'%s'\n" % (lineNumber, refPath, rline, testPath, tline))
     rf.close()
     tf.close()
-    return True
+    if badLines > 0:
+        sys.stderr.write("%d total mismatches.  Files %s, %s\n" % (badLines, refPath, testPath))
+    return badLines == 0
             
 def regress(params, processCount, xflags = []):
     refPath = cacheDir + regressionName(params, standard = True)
@@ -164,7 +179,7 @@ def regress(params, processCount, xflags = []):
 
     return checkFiles(refPath, testPath)
 
-def run(flushCache, processCount, xflags):
+def run(flushCache, processCount, xflags, doAll):
     if flushCache and os.path.exists(cacheDir):
         try:
             simProcess = subprocess.Popen(["rm", "-rf", cacheDir])
@@ -179,23 +194,23 @@ def run(flushCache, processCount, xflags):
             sys.exit(1)
     goodCount = 0
     allCount = 0
-    for p in regressionList:
+    rlist = regressionList + (extraRegressionList if doAll else [])
+    for p in rlist:
         allCount += 1
         if regress(p, processCount, xflags):
             sys.stderr.write("Regression %s passed\n" % regressionName(p, standard = False))
             goodCount += 1
-    totalCount = len(regressionList)
+    totalCount = len(rlist)
     message = "SUCCESS" if goodCount == totalCount else "FAILED"
     sys.stderr.write("Regression set size %d.  %d/%d tests successful. %s\n" % (totalCount, goodCount, allCount, message))
 
 
 if __name__ == "__main__":
     flushCache = False
-    xflags = []
     processCount = 1
     xflags = []
-    optstring = "hc"
-    optstring += "p:"
+    doAll = False
+    optstring = "hcp:a"
     optlist, args = getopt.getopt(sys.argv[1:], optstring)
     for (opt, val) in optlist:
         if opt == '-h':
@@ -204,4 +219,6 @@ if __name__ == "__main__":
             flushCache = True
         elif opt == '-p':
             processCount = int(val)
-    run(flushCache, processCount, xflags)
+        elif opt == '-a':
+            doAll = True
+    run(flushCache, processCount, xflags, doAll)

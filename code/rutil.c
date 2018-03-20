@@ -14,7 +14,8 @@
 
 static inline random_t rnext(random_t *seedp, random_t x) {
     uint64_t s = (uint64_t) *seedp;
-    random_t val = ((x+1) * VVAL + s * MVAL) % GROUPSIZE;
+    uint64_t xlong = (uint64_t) x;
+    random_t val = ((xlong+1) * VVAL + s * MVAL) % GROUPSIZE;
     *seedp = (random_t) val;
     return val;
 }

@@ -223,7 +223,7 @@ def run(name, args):
     optString = "ha:s:u:p:f:"
     processLimit = 100
     otherArgs = []
-    mpiFlags = newMpiFlags
+    mpiFlags = []
     optlist, args = getopt.getopt(args, optString)
     for (opt, val) in optlist:
         if opt == '-h':
