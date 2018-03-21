@@ -17,6 +17,7 @@ def usage(fname):
     print "    -c       Clear expected result cache"
     print "    -p PCS   Specify number of MPI processes"
     print "       If > 1, will run crun-mpi.  Else will run crun"
+    print     "-a       Run ALL tests, including for big graphs"
     sys.exit(0)
 
 

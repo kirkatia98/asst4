@@ -38,7 +38,7 @@ def score(s, target, wt):
     return wt * (s-mins)/(maxs-mins)
 
 # Accept dictionary of MRPS measurements, each having (mode, parallel) as key
-def grade(gmeanDict, outf, info = ""):
+def grade(ok, gmeanDict, outf, info = ""):
     total = 0.0
     maxtotal = 0.0
     outf.write("---------" * 9 + "\n")
@@ -75,6 +75,9 @@ def grade(gmeanDict, outf, info = ""):
         outf.write("  Ratio = %d:%d, Mode = %s, Achieved = %.2f, Target = %.2f, Score = %.2f/%.2f\n" % (t2, t1, name, s, target, val, wt))
         total += val
     itotal = math.ceil(total)
+    if not ok:
+        outf.write("ERROR: One or more tests failed.  No credit given\n")
+        itotal = 0
     outf.write("TOTAL = %d/%.0f\n" % (itotal, maxtotal))
     outf.write("---------" * 9 + "\n")
 

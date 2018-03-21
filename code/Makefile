@@ -33,6 +33,7 @@ crun-seq: $(CFILES) $(HFILES)
 crun-mpi: $(CFILES) $(XCFILES) $(HFILES) $(XHFILES)
 	$(MPICC) $(CFLAGS) $(MPI) -o crun-mpi $(CFILES) $(XCFILES) $(LDFLAGS)
 
+
 demo1: grun.py
 	@echo "Running Python simulator with text visualization.  Synchronous mode."
 	./grun.py -g data/g-u400.gph -r data/r-400-d10.rats -n 20 -u s -v a -p 0.3
