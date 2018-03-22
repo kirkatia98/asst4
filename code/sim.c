@@ -160,7 +160,7 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
 	    show(s, show_counts);
 	}
     }
-    if (s->process_id == 0)
+    if (display && s->process_id == 0)
 	done();
 }
 
