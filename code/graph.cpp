@@ -1,24 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
+#include <cstdio>
+#include <cstdlib>
+
 
 #include "crun.h"
 
 graph_t *new_graph(int nnode, int nedge, int tile_max) {
     bool ok = true;
-    graph_t *g = malloc(sizeof(graph_t));
-    if (g == NULL)
-	return NULL;
+    auto *g = new graph_t;
+
     g->nnode = nnode;
     g->nrow = (int) sqrt(g->nnode);
     g->tile_max = tile_max > 0 ? tile_max : g->nrow;
     g->nedge = nedge;
-    g->neighbor = calloc(nnode + nedge, sizeof(int));
+
+    g->neighbor = new int[nedge+ nnode];
     ok = ok && g->neighbor != NULL;
-    g->neighbor_start = calloc(nnode + 1, sizeof(int));
+
+    g->neighbor_start = new int[nedge+1];
     ok = ok && g->neighbor_start != NULL;
 
-    g->gsums = calloc(nnode + nedge, sizeof(double));
+    g->gsums = new double[nedge+ nnode];
     ok = ok && g->gsums != NULL;
 
 
@@ -110,6 +111,7 @@ graph_t *read_graph(FILE *infile) {
     }
     g->neighbor_start[nnode] = eid;
     outmsg("Loaded graph with %d nodes and %d edges\n", nnode, nedge);
+
 #if DEBUG
     show_graph(g);
 #endif

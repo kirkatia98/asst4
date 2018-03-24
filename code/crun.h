@@ -13,6 +13,8 @@
 #include <ctype.h>
 #include <math.h>
 
+#include <vector>
+
 #if MPI
 #include <mpi.h>
 #endif
@@ -124,7 +126,7 @@ void show_graph(graph_t *g);
 
 /*** Functions in simutil.c ***/
 /* Print message on stderr */
-void outmsg(char *fmt, ...);
+void outmsg(const char *fmt, ...);
 
 
 /* Allocate and zero arrays of int/double */

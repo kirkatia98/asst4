@@ -1,6 +1,6 @@
 #include "crun.h"
 
-void outmsg(char *fmt, ...) {
+void outmsg(const char *fmt, ...) {
     va_list ap;
     bool got_newline = fmt[strlen(fmt)-1] == '\n';
     va_start(ap, fmt);
@@ -32,7 +32,8 @@ static random_t *rt_alloc(size_t n) {
 state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     int nnode = g->nnode;
 
-    state_t *s = malloc(sizeof(state_t));
+    auto *s = new state_t;
+
     if (s == NULL) {
 	outmsg("Couldn't allocate storage for state\n");
 	return NULL;
@@ -46,8 +47,8 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->load_factor = (double) nrat / nnode;
 
     /* Compute batch size as max(BATCH_FRACTION * R, sqrt(R)) */
-    int rpct = (int) (BATCH_FRACTION * nrat);
-    int sroot = (int) sqrt(nrat);
+    auto rpct = (int) (BATCH_FRACTION * nrat);
+    auto sroot = (int) sqrt(nrat);
     if (rpct > sroot)
 	s->batch_size = rpct;
     else
@@ -58,13 +59,17 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     bool ok = true;
     s->rat_position = int_alloc(nrat);
     ok = ok && s->rat_position != NULL;
+
     s->next_rat_position = int_alloc(nrat);
     ok = ok && s->next_rat_position != NULL;
+
     s->rat_seed = rt_alloc(nrat);
     ok = ok && s->rat_seed != NULL;
+
     s->rat_count = int_alloc(nnode);
     ok = ok && s->rat_count != NULL;
-    s->pre_computed = malloc((s->nrat + 1) * sizeof(double));
+
+    s->pre_computed = double_alloc(nrat+1);
     ok = ok && s->pre_computed != NULL;
 
     if (!ok) {

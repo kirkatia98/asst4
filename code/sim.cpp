@@ -1,5 +1,6 @@
 #include "crun.h"
 
+
 //Fetch pre computed weight for that count
 static inline double compute_weight(state_t *s, int nid) {
     int count = s->rat_count[nid];

@@ -10,7 +10,8 @@
 
 
 static void usage(char *name) {
-    char *use_string = "-g GFILE -r RFILE [-n STEPS] [-s SEED] [-u (r|b|s)] [-q] [-i INT]";
+    const char *use_string = "-g GFILE -r RFILE [-n STEPS] [-s SEED] [-u "
+            "(r|b|s)] [-q] [-i INT]";
     outmsg("Usage: %s %s\n", name, use_string);
     outmsg("   -h        Print this message\n");
     outmsg("   -g GFILE  Graph file\n");
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     bool mpi_master = process_id == 0;
-    char *optstring = "hg:r:R:n:s:u:i:q";
+    const char *optstring = "hg:r:R:n:s:u:i:q";
     while ((c = getopt(argc, argv, optstring)) != -1) {
 	switch(c) {
 	case 'h':
@@ -173,9 +174,6 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-#if DEBUG
-    show_graph(g);
-#endif
 
     double start = currentSeconds();
 
