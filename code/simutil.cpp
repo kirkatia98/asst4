@@ -47,8 +47,8 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->load_factor = (double) nrat / nnode;
 
     /* Compute batch size as max(BATCH_FRACTION * R, sqrt(R)) */
-    auto rpct = (int) (BATCH_FRACTION * nrat);
-    auto sroot = (int) sqrt(nrat);
+    int rpct = (int) (BATCH_FRACTION * nrat);
+    int sroot = (int) sqrt(nrat);
     if (rpct > sroot)
 	s->batch_size = rpct;
     else
