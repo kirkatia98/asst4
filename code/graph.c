@@ -17,6 +17,11 @@ graph_t *new_graph(int nnode, int nedge, int tile_max) {
     ok = ok && g->neighbor != NULL;
     g->neighbor_start = calloc(nnode + 1, sizeof(int));
     ok = ok && g->neighbor_start != NULL;
+
+    g->gsums = calloc(nnode + nedge, sizeof(double));
+    ok = ok && g->gsums != NULL;
+
+
     if (!ok) {
 	outmsg("Couldn't allocate graph data structures");
 	return NULL;
@@ -27,6 +32,7 @@ graph_t *new_graph(int nnode, int nedge, int tile_max) {
 void free_graph(graph_t *g) {
     free(g->neighbor);
     free(g->neighbor_start);
+    free(g->gsums);
     free(g);
 }
 

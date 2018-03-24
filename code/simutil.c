@@ -38,7 +38,7 @@ static state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 	return NULL;
     }
 
-    s->graph = g;
+    s->g = g;
     s->nrat = nrat;
     s->nprocess = 1;
     s->process_id = 0;
@@ -64,10 +64,14 @@ static state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     ok = ok && s->rat_seed != NULL;
     s->rat_count = int_alloc(nnode);
     ok = ok && s->rat_count != NULL;
+    s->pre_computed = malloc((s->nrat + 1) * sizeof(double));
+    ok = ok && s->pre_computed != NULL;
+
     if (!ok) {
 	outmsg("Couldn't allocate space for %d rats", nrat);
 	return NULL;
     }
+
     return s;
 }
 
@@ -134,6 +138,13 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
 	s->rat_position[r] = nid;
     }
 
+    //calculate pre-computed mweights
+    int i;
+    for(i = 0; i <= s->nrat; i++)
+    {
+        s->pre_computed[i] = mweight((double) i/s->load_factor);
+    }
+
     seed_rats(s);
     outmsg("Loaded %d rats\n", nrat);
     return s;
@@ -142,7 +153,7 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
 /* print state of nodes */
 void show(state_t *s, bool show_counts) {
     int nid;
-    graph_t *g = s->graph;
+    graph_t *g = s->g;
     printf("STEP %d %d\n", g->nnode, s->nrat);
     if (show_counts) {
 	    for (nid = 0; nid < g->nnode; nid++)

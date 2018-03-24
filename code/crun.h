@@ -51,6 +51,14 @@ typedef enum { UPDATE_SYNCHRONOUS, UPDATE_BATCH, UPDATE_RAT } update_t;
    T = number of threads
  */
 
+//variables to be sent at the beginning
+typedef struct {
+    int nnode;
+    int nedge;
+    int tile_max;
+    int nrat;
+    random_t global_seed;
+} init_vars;
 
 /* Representation of graph */
 typedef struct {
@@ -60,17 +68,18 @@ typedef struct {
     int nrow;  /* == sqrt(nnode) */
     int tile_max;  /* Maximum number of consecutive rows having non-grid connections */
 
+
     /* Graph structure representation */
     // Adjacency lists.  Includes self edge. Length=M+N.  Combined into single vector
     int *neighbor;
     // Starting index for each adjacency list.  Length=N+1
     int *neighbor_start;
-
+    double * gsums;         //accumulative sum of weights for self and neighbors
 } graph_t;
 
 /* Representation of simulation state */
 typedef struct {
-    graph_t *graph;
+    graph_t *g; //graph
 
     int nrat;
     /* MPI processes & process id */
@@ -96,13 +105,15 @@ typedef struct {
     update_t update_mode; 
     int batch_size;   // Batch size for batch mode
 
+    double *pre_computed;
+
 } state_t;
     
 
 /*** Functions in graph.c. ***/
 graph_t *new_graph(int nnode, int nedge, int tile_max);
 
-void free_graph();
+void free_graph(graph_t *g);
 
 graph_t *read_graph(FILE *gfile);
 
@@ -123,7 +134,7 @@ double *double_alloc(size_t n);
 
 /* Read rat file and initialize simulation state */
 state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed);
-
+static state_t *new_rats(graph_t *g, int nrat, random_t global_seed);
 
 /* Generate done message from simulator */
 void done();

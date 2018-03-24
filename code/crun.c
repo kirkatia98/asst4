@@ -5,6 +5,10 @@
 
 #include "crun.h"
 
+
+
+
+
 static void usage(char *name) {
     char *use_string = "-g GFILE -r RFILE [-n STEPS] [-s SEED] [-u (r|b|s)] [-q] [-i INT]";
     outmsg("Usage: %s %s\n", name, use_string);
@@ -36,11 +40,13 @@ int main(int argc, char *argv[]) {
     graph_t *g = NULL;
     state_t *s = NULL;
     bool display = true;
+
 #if MPI
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &process_count);
     MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
 #endif
+
     bool mpi_master = process_id == 0;
     char *optstring = "hg:r:R:n:s:u:i:q";
     while ((c = getopt(argc, argv, optstring)) != -1) {
@@ -103,40 +109,74 @@ int main(int argc, char *argv[]) {
 	}
     }
     if (mpi_master) {
-      	if (gfile == NULL) {
-	    outmsg("Need graph file\n");
-	    usage(argv[0]);
-	}
-	if (rfile == NULL) {
-	    outmsg("Need initial rat position file\n");
-	    usage(argv[0]);
-	}
+        if (gfile == NULL) {
+            outmsg("Need graph file\n");
+            usage(argv[0]);
+        }
+        if (rfile == NULL) {
+            outmsg("Need initial rat position file\n");
+            usage(argv[0]);
+        }
 
+        g = read_graph(gfile);
+        if (g == NULL) {
+            done();
+            exit(1);
+        }
+        s = read_rats(g, rfile, global_seed);
+        if (s == NULL) {
+            done();
+            exit(1);
+        }
 
-	g = read_graph(gfile);
-	if (g == NULL) {
-	    done();
-	    exit(1);
-	}
-	s = read_rats(g, rfile, global_seed);
-	if (s == NULL) {
-	    done();
-	    exit(1);
-	}
-	s->nprocess = process_count;
-	s->process_id = process_id;
-	/* The master should distribute the graph & the rats to the other nodes */
-    } else {
-	/* The other nodes should get the graph & the rats from the master */
+        s->nprocess = process_count;
+        s->process_id = process_id;
+        /* The master should distribute the graph & the rats to the other nodes */
+#if MPI
+        init_vars *vars = malloc(sizeof(init_vars));
+        vars->nnode = g->nnode;
+        vars->nedge = g->nedge;
+        vars->tile_max = g->tile_max;
+        vars->nrat = s->nrat;
+        vars->global_seed = s->global_seed;
+
+        MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
+#endif
     }
+    else
+    {
+#if MPI
+        void* vars = malloc(sizeof(init_vars));
+        MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
+        init_vars* V = (init_vars*)vars;
+        g = new_graph(V->nnode, V->nedge, V->tile_max);
+        s = new_rats(g, V->nrat, V->global_seed);
+        s->process_id = process_id;
+        s->nprocess = process_count;
+#endif
+    }
+
+#if MPI
+    //RATS
+    MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(s->rat_count, g->nnode, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+
+    //GRAPH
+    MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
+
 
     double start = currentSeconds();
     if (mpi_master)
-	// Run sequential simulator on process #0
-	simulate(s, steps, update_mode, dinterval, display);
-    double delta = currentSeconds() - start;
-    if (mpi_master) {
-	outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
+        // Run sequential simulator on process #0
+        simulate(s, steps, update_mode, dinterval, display);
+        double delta = currentSeconds() - start;
+        if (mpi_master) {
+        outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
     }
 #if MPI
     MPI_Finalize();
