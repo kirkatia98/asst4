@@ -212,6 +212,10 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
     if (display && mpi_master) {
 	    show(s, show_counts);
     }
+#if DEBUG
+    show_weights(s);
+#endif
+
     for (i = 0; i < count; i++) {
 
         run_step(s, batch_size);
