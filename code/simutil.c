@@ -29,7 +29,7 @@ static random_t *rt_alloc(size_t n) {
 
 
 /* Allocate simulation state */
-static state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
+state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     int nnode = g->nnode;
 
     state_t *s = malloc(sizeof(state_t));

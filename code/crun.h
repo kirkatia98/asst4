@@ -134,7 +134,7 @@ double *double_alloc(size_t n);
 
 /* Read rat file and initialize simulation state */
 state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed);
-static state_t *new_rats(graph_t *g, int nrat, random_t global_seed);
+state_t *new_rats(graph_t *g, int nrat, random_t global_seed);
 
 /* Generate done message from simulator */
 void done();
