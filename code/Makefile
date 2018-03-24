@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 
 MPI=-DMPI
 MPICC = mpicc
