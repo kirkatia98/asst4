@@ -29,10 +29,8 @@ static void show_weights(state_t *s) {
     for (nid = 0; nid < nnode; nid++) {
 	int eid_start = g->neighbor_start[nid];
 	int eid_end  = g->neighbor_start[nid+1];
-	track = true;
 	outmsg("In show_weights:\n");
 	compute_sum_weight(s, nid);
-	track = false;
 	outmsg("%d: [sum = %.3f]", nid, compute_sum_weight(s, nid));
 	for (eid = eid_start; eid < eid_end; eid++) {
 	    outmsg(" %.3f", compute_weight(s, neighbor[eid]));
