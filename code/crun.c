@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
 
-    MPIBarrier();
+    MPI_Barrier();
 #endif
 
 #if DEBUG
