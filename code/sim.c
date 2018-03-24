@@ -22,7 +22,7 @@ static void panic(char *msg) {
 
 static void show_weights(state_t *s) {
     int nid, eid;
-    graph_t *g = s->graph;
+    graph_t *g = s->g;
     int nnode = g->nnode;
     int *neighbor = g->neighbor;
     outmsg("Weights\n");
@@ -153,8 +153,8 @@ static inline int next_random_move(state_t *s, int r) {
     if (nnid == -1) {
         /* Shouldn't get here */
         int degree = g->neighbor_start[nid+1] - g->neighbor_start[nid];
-        outmsg("Internal error.  next_random_move.  Didn't find valid move.  Node %d. Degree = %d, Target = %.2f/%.2f.  Limit = %.2f\n",
-               nid, degree, val, tsum, psum);
+        outmsg("Internal error.  next_random_move.  Didn't find valid move.  Node %d. Degree = %d, Target = %.2f/%.2f",
+               nid, degree, val, tsum);
         nnid = 0;
     }
 #endif
