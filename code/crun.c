@@ -131,6 +131,8 @@ int main(int argc, char *argv[]) {
 
         s->nprocess = process_count;
         s->process_id = process_id;
+
+        take_census(s);
         /* The master should distribute the graph & the rats to the other nodes */
 #if MPI
         init_vars *vars = malloc(sizeof(init_vars));
@@ -167,15 +169,21 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+
+    MPIBarrier();
 #endif
 
+#if DEBUG
+    show_graph(g);
+#endif
 
     double start = currentSeconds();
-    if (mpi_master)
-        // Run sequential simulator on process #0
-        simulate(s, steps, update_mode, dinterval, display);
-        double delta = currentSeconds() - start;
-        if (mpi_master) {
+
+    simulate(s, steps, update_mode, dinterval, display);
+
+    double delta = currentSeconds() - start;
+
+    if (mpi_master) {
         outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
     }
 #if MPI

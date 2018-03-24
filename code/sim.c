@@ -44,7 +44,7 @@ static void show_weights(state_t *s) {
 
 
 /* Recompute all node counts according to rat population */
-static inline void take_census(state_t *s) {
+void take_census(state_t *s) {
     graph_t *g = s->g;
     int nnode = g->nnode;
     int *rat_position = s->rat_position;
@@ -163,29 +163,32 @@ static inline int next_random_move(state_t *s, int r) {
 
 //TODO: do based on domain
 static void process_batch(state_t *s, int bstart, int bcount) {
-    int rid;
-    for (rid = bstart; rid < bstart+bcount; rid++)
-	// Determine where rat will go
-	s->next_rat_position[rid] = next_random_move(s, rid);
-    for (rid = bstart; rid < bstart+bcount; rid++) {
-	int onid = s->rat_position[rid];
-	int nnid = s->next_rat_position[rid];
-	s->rat_count[onid]--;
-	s->rat_count[nnid]++;
-	s->rat_position[rid] = nnid;
+    graph_t *g = s->g;
+    int rid, nid, eid;
+    int nodes = g->nnode;
+
+
+    for (rid = bstart; rid < bstart + bcount; rid++)
+    {
+        s->next_rat_position[rid] = next_random_move(s, rid);
+        int onid = s->rat_position[rid];
+        int nnid = s->next_rat_position[rid];
+
     }
 }
 
 static void run_step(state_t *s, int batch_size) {
     int b, bcount;
     for (b = 0; b < s->nrat; b += batch_size) {
-	int rest = s->nrat - b;
-	bcount = rest < batch_size ? rest : batch_size;
-	process_batch(s, b, bcount);
+        int rest = s->nrat - b;
+        bcount = rest < batch_size ? rest : batch_size;
+        process_batch(s, b, bcount);
     }
 }
 
 void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool display) {
+    bool mpi_master = (s->process_id == 0);
+
     s->update_mode = update_mode;
     int i;
     /* Compute and show initial state */
@@ -207,18 +210,20 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
             batch_size = s->batch_size;
         break;
     }
-    take_census(s);
-    if (display) {
-	show(s, show_counts);
+
+    if (display && mpi_master) {
+	    show(s, show_counts);
     }
     for (i = 0; i < count; i++) {
+
         run_step(s, batch_size);
-        if (display) {
+
+        if (display && mpi_master) {
             show_counts = (((i+1) % dinterval) == 0) || (i == count-1);
             show(s, show_counts);
         }
     }
-    if (display && s->process_id == 0)
+    if (display && mpi_master)
 	    done();
 }
 
