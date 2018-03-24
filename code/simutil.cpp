@@ -32,7 +32,7 @@ static random_t *rt_alloc(size_t n) {
 state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     int nnode = g->nnode;
 
-    auto *s = new state_t;
+    state_t *s = new state_t;
 
     if (s == NULL) {
 	outmsg("Couldn't allocate storage for state\n");

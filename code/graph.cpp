@@ -6,7 +6,7 @@
 
 graph_t *new_graph(int nnode, int nedge, int tile_max) {
     bool ok = true;
-    auto *g = new graph_t;
+    graph_t *g = new graph_t;
 
     g->nnode = nnode;
     g->nrow = (int) sqrt(g->nnode);
