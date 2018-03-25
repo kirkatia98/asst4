@@ -221,7 +221,7 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
 
         run_step(s, batch_size);
 
-        if (display && mpi_master) {
+        if (display && (s->process_id == 1)) {
             show_counts = (((i+1) % dinterval) == 0) || (i == count-1);
             show(s, show_counts);
         }

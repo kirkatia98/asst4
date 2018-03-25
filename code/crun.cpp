@@ -136,6 +136,12 @@ int main(int argc, char *argv[]) {
         take_census(s);
         /* The master should distribute the graph & the rats to the other nodes */
 #if MPI
+        if(g->tile_max == 1)
+        {
+            g->tile_max = 16; //set the tiles to be 16 big to be good to cache
+            // size
+        }
+
         init_vars *vars = (init_vars*) malloc(sizeof(init_vars));
         vars->nnode = g->nnode;
         vars->nedge = g->nedge;
