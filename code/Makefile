@@ -1,7 +1,7 @@
 CC=g++
 
 MPI=-DMPI
-MPICC = mpiCC
+MPICC = mpicxx
 
 DEBUG=1
 CFLAGS=-g -O0 -Wall -DDEBUG=$(DEBUG)
