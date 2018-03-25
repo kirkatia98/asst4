@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
         take_census(s);
         /* The master should distribute the graph & the rats to the other nodes */
 #if MPI
-        init_vars *vars = malloc(sizeof(init_vars));
+        init_vars *vars = (init_vars*) malloc(sizeof(init_vars));
         vars->nnode = g->nnode;
         vars->nedge = g->nedge;
         vars->tile_max = g->tile_max;
