@@ -152,5 +152,8 @@ void show(state_t *s, bool show_counts);
 void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool display);
 void take_census(state_t *s);
 
+int *int_alloc(size_t n);
+double *double_alloc(size_t n);
+
 #define CRUN_H
 #endif /* CRUN_H */

@@ -5,15 +5,7 @@
 #include "crun.h"
 
 
-/* Allocate n int's and zero them out. */
-int *int_alloc(size_t n) {
-    return (int *) calloc(n, sizeof(int));
-}
 
-/* Allocate n doubles's and zero them out. */
-double *double_alloc(size_t n) {
-    return (double *) calloc(n, sizeof(double));
-}
 
 graph_t *new_graph(int nnode, int nedge, int tile_max) {
     bool ok = true;
