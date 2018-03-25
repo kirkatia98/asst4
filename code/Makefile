@@ -1,14 +1,14 @@
-CC=gcc
+CC=g++
 
 MPI=-DMPI
-MPICC = mpicc
+MPICC = mpiCC
 
-DEBUG=0
-CFLAGS=-g -O3 -Wall -DDEBUG=$(DEBUG)
+DEBUG=1
+CFLAGS=-g -O0 -Wall -DDEBUG=$(DEBUG)
 LDFLAGS= -lm
 DDIR = ./data
 
-CFILES = crun.c graph.c simutil.c sim.c rutil.c cycletimer.c
+CFILES = crun.cpp graph.cpp simutil.cpp sim.cpp rutil.c cycletimer.c
 HFILES = crun.h rutil.h cycletimer.h
 
 GFILES = gengraph.py grun.py rutil.py sim.py viz.py  regress.py benchmark.py grade.py
