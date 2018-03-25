@@ -4,22 +4,33 @@
 
 #include "crun.h"
 
+
+/* Allocate n int's and zero them out. */
+int *int_alloc(size_t n) {
+    return (int *) calloc(n, sizeof(int));
+}
+
+/* Allocate n doubles's and zero them out. */
+double *double_alloc(size_t n) {
+    return (double *) calloc(n, sizeof(double));
+}
+
 graph_t *new_graph(int nnode, int nedge, int tile_max) {
     bool ok = true;
-    graph_t *g = new graph_t;
+    graph_t *g = (graph_t*) malloc(sizeof(graph_t));
 
     g->nnode = nnode;
     g->nrow = (int) sqrt(g->nnode);
     g->tile_max = tile_max > 0 ? tile_max : g->nrow;
     g->nedge = nedge;
 
-    g->neighbor = new int[nedge+ nnode];
+    g->neighbor = int_alloc(nedge + nnode);
     ok = ok && g->neighbor != NULL;
 
-    g->neighbor_start = new int[nedge+1];
+    g->neighbor_start = int_alloc(nedge);
     ok = ok && g->neighbor_start != NULL;
 
-    g->gsums = new double[nedge+ nnode];
+    g->gsums = double_alloc(nedge+ nnode);
     ok = ok && g->gsums != NULL;
 
 
