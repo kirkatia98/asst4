@@ -1,7 +1,7 @@
 CC=g++
 
 MPI=-DMPI
-MPICC = mpicxx
+MPICC = mpicc
 
 DEBUG=1
 CFLAGS=-g -O0 -Wall -DDEBUG=$(DEBUG)
@@ -31,7 +31,7 @@ crun-seq: $(CFILES) $(HFILES)
 	$(CC) $(CFLAGS) -o crun-seq $(CFILES) $(LDFLAGS)
 
 crun-mpi: $(CFILES) $(XCFILES) $(HFILES) $(XHFILES)
-	$(MPICC) $(CFLAGS) $(MPI) -o crun-mpi $(CFILES) $(XCFILES) $(LDFLAGS)
+	$(MPICC) $(CFLAGS) -DOMPI_SKIP_MPICXX $(MPI) -o crun-mpi $(CFILES) $(XCFILES) $(LDFLAGS)
 
 
 demo1: grun.py
