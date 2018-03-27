@@ -187,7 +187,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
                 s->disp, s->tile_type, 0, MPI_COMM_WORLD);
     MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
 
-    MPI_Barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 }
@@ -246,7 +246,7 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
             show(s, show_counts);
         }
 #if MPI
-        MPI_Barrier();
+        MPI_Barrier(MPI_COMM_WORLD);
 #endif
     }
 
