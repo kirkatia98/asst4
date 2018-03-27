@@ -2,17 +2,16 @@
 
 /* Defining variable MPI enables use of MPI primitives */
 #ifndef MPI
-#define MPI 0
+#define MPI 1
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <string.h>
-#include <ctype.h>
-#include <math.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <cstdbool>
+#include <cstdarg>
+#include <cstring>
+#include <cctype>
+#include <cmath>
 #include <vector>
 
 
@@ -58,7 +57,10 @@ typedef enum { UPDATE_SYNCHRONOUS, UPDATE_BATCH, UPDATE_RAT } update_t;
 typedef struct {
     int nnode;
     int nedge;
-    int tile_max;
+    int tile_size;
+    int tiles_per_side;
+
+
     int nrat;
     random_t global_seed;
 } init_vars;
@@ -69,8 +71,8 @@ typedef struct {
     int nnode;
     int nedge;
     int nrow;  /* == sqrt(nnode) */
-    int tile_max;  /* Maximum number of consecutive rows having non-grid connections */
-
+    int tile_size;  /* Maximum number of consecutive rows having non-grid connections */
+    int tiles_per_side;
 
     /* Graph structure representation */
     // Adjacency lists.  Includes self edge. Length=M+N.  Combined into single vector
@@ -109,6 +111,16 @@ typedef struct {
     int batch_size;   // Batch size for batch mode
 
     double *pre_computed;
+
+#if MPI
+    //mvscatter stuff
+    int *sendcounts;
+    int *disp;
+    MPI_Datatype tile_type;
+    int * local;        //not allocated at first, size depends on how many tiles
+    int side_length;
+    int my_nodes;
+#endif
 
 } state_t;
     

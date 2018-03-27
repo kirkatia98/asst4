@@ -1,5 +1,7 @@
 #include "crun.h"
 
+
+
 void outmsg(const char *fmt, ...) {
     va_list ap;
     bool got_newline = fmt[strlen(fmt)-1] == '\n';
@@ -72,6 +74,13 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->pre_computed = double_alloc(nrat+1);
     ok = ok && s->pre_computed != NULL;
 
+#if MPI
+    s->sendcounts = int_alloc(s->nprocess);
+    ok = ok && s->sendcounts != NULL;
+
+    s->disp = int_alloc(s->nprocess);
+    ok = ok && s->disp != NULL;
+#endif
     if (!ok) {
 	outmsg("Couldn't allocate space for %d rats", nrat);
 	return NULL;
@@ -150,6 +159,44 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
         s->pre_computed[i] = mweight((double) i/s->load_factor);
     }
 
+    memset(s->rat_count, 0, nnode * sizeof(int));
+    //for each rat, look at its position and increment the correct node
+    int ri;
+    for (ri = 0; ri < nrat; ri++) {
+        s->rat_count[s->rat_position[ri]] ++;
+    }
+
+#if MPI
+    if(g->tile_size == 1)
+    {
+        g->tile_size = 10; //set the tiles for divisibility
+    }
+
+    g->tiles_per_side = g->nrow/g->tile_size;
+
+    //if nrow not divisible by tile size, extend the graph to be multiple
+    // of tile size
+    if(g->nrow % g->tile_size != 0)
+    {
+        g->tiles_per_side++;
+        s->side_length = g->tiles_per_side * g->tile_size;
+        int* new_rat_counts = int_alloc(s->side_length * s->side_length);
+
+        int i, j;
+        for(i = 0 ; i < g->nrow; i++)
+        {
+            for(j = 0; j < g->nrow; j++)
+            {
+                new_rat_counts[i*s->side_length +j] = s->rat_count[i*g->nrow + j];
+            }
+        }
+        free(s->rat_count);
+        s->rat_count = new_rat_counts;
+    }
+    else //use side length from now on
+        s->side_length = g->nrow;
+#endif
+
     seed_rats(s);
     outmsg("Loaded %d rats\n", nrat);
     return s;
@@ -161,8 +208,16 @@ void show(state_t *s, bool show_counts) {
     graph_t *g = s->g;
     printf("STEP %d %d\n", g->nnode, s->nrat);
     if (show_counts) {
-	    for (nid = 0; nid < g->nnode; nid++)
-		printf("%d\n", s->rat_count[nid]);
+        int i, j;
+
+
+        for(i = 0 ; i < g->nrow; i++)
+        {
+            for(j = 0; j < g->nrow; j++)
+            {
+                printf("%d\n", s->rat_count[i*s->side_length + j]);
+            }
+        }
     }
     printf("END\n");
 }

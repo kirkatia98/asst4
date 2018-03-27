@@ -1,5 +1,6 @@
 #include "crun.h"
 
+#define MPI 1
 
 //Fetch pre computed weight for that count
 static inline double compute_weight(state_t *s, int nid) {
@@ -50,13 +51,7 @@ void take_census(state_t *s) {
     int *rat_count = s->rat_count;
     int nrat = s->nrat;
 
-    memset(rat_count, 0, nnode * sizeof(int));
 
-    //for each rat, look at its position and increment the correct node
-    int ri;
-    for (ri = 0; ri < nrat; ri++) {
-        rat_count[rat_position[ri]] ++;
-    }
 
     //for each node, fill in its weight in the self edge index
     int nid, eid;
@@ -166,14 +161,37 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     int rid, nid, eid;
     int nodes = g->nnode;
 
+#if MPI
+
+    MPI_Scatterv(s->rat_count, s->sendcounts, s->disp, s->tile_type, s->local,
+                 s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
 
     for (rid = bstart; rid < bstart + bcount; rid++)
     {
         s->next_rat_position[rid] = next_random_move(s, rid);
         int onid = s->rat_position[rid];
         int nnid = s->next_rat_position[rid];
-
     }
+    int i;
+    for(i = 0; i < s->my_nodes; i++)
+    {
+        s->local+= s->process_id;
+    }
+
+    //update gsums and redistribute
+    if(s->process_id == 0)
+    {
+        take_census(s);
+    }
+#if MPI
+    MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->rat_count, s->sendcounts,
+                s->disp, s->tile_type, 0, MPI_COMM_WORLD);
+    MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+
+    MPI_Barrier();
+#endif
+
 }
 
 static void run_step(state_t *s, int batch_size) {
@@ -182,6 +200,7 @@ static void run_step(state_t *s, int batch_size) {
         int rest = s->nrat - b;
         bcount = rest < batch_size ? rest : batch_size;
         process_batch(s, b, bcount);
+
     }
 }
 
@@ -189,6 +208,7 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
     bool mpi_master = (s->process_id == 0);
 
     s->update_mode = update_mode;
+    graph_t* g = s->g;
     int i;
     /* Compute and show initial state */
     bool show_counts = display;
@@ -210,22 +230,31 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
         break;
     }
 
+
     if (display && mpi_master) {
 	    show(s, show_counts);
     }
 #if DEBUG
     show_weights(s);
 #endif
+#if MPI
+
+#endif
 
     for (i = 0; i < count; i++) {
 
         run_step(s, batch_size);
 
-        if (display && (s->process_id == 1)) {
+        if (display && mpi_master) {
             show_counts = (((i+1) % dinterval) == 0) || (i == count-1);
             show(s, show_counts);
         }
+#if MPI
+        MPI_Barrier();
+#endif
     }
+
+
     if (display && mpi_master)
 	    done();
 }

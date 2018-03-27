@@ -5,7 +5,7 @@
 
 #include "crun.h"
 
-
+#define MPI 1
 
 
 
@@ -130,47 +130,94 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        s->nprocess = process_count;
-        s->process_id = process_id;
-
-        take_census(s);
-        /* The master should distribute the graph & the rats to the other nodes */
 #if MPI
-        if(g->tile_max == 1)
-        {
-            g->tile_max = 16; //set the tiles to be 16 big to be good to cache
-            // size
-        }
+        /* The master should distribute the graph & the rats to the other nodes */
 
         init_vars *vars = (init_vars*) malloc(sizeof(init_vars));
         vars->nnode = g->nnode;
         vars->nedge = g->nedge;
-        vars->tile_max = g->tile_max;
+        vars->tile_size = g->tile_size;
         vars->nrat = s->nrat;
         vars->global_seed = s->global_seed;
+        vars->tiles_per_side = g->tiles_per_side;
 
         MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
+
 #endif
     }
     else
     {
 #if MPI
+        //Receive and make copies of the state and graph
         void* vars = malloc(sizeof(init_vars));
         MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
         init_vars* V = (init_vars*)vars;
-        g = new_graph(V->nnode, V->nedge, V->tile_max);
+        g = new_graph(V->nnode, V->nedge, V->tile_size);
         s = new_rats(g, V->nrat, V->global_seed);
-        s->process_id = process_id;
-        s->nprocess = process_count;
 #endif
     }
+    s->nprocess = process_count;
+    s->process_id = process_id;
+
 
 #if MPI
+    //FOR SENDING TILES ONLY
+    MPI_Datatype tile_type, resize_tile;
+    int dim = 2;
+
+    int sizes[dim]    = {g->nrow,g->nrow};  /* size of global array */
+    int subsizes[dim] = {g->tile_size,g->tile_size};  /* size of sub-region */
+    int starts[dim]   = {0,0};
+
+    /*creates a type that is tile_size by tile_size*/
+    MPI_Type_create_subarray(dim , sizes, subsizes, starts, MPI_ORDER_C,
+                             MPI_INT, &tile_type);
+    /* changes the width to be 1*/
+    MPI_Type_create_resized(tile_type, 0, g->tile_size*sizeof(int), &resize_tile);
+    MPI_Type_commit(&resize_tile);
+    MPI_Type_commit(&tile_type);
+
+    s->tile_type = tile_type; //save the tile type we just created
+
+    //DISPLACEMENTS AND SEND COUNTS
+
+    //how many tiles each process computes
+    int per_process = (g->tiles_per_side*g->tiles_per_side)/ s->nprocess;
+
+    // elements remaining after division among processes
+    int rem = (g->tiles_per_side*g->tiles_per_side)% s->nprocess;
+
+    // Sum of counts. Used to calculate displacements
+    int sum = 0;
+    int p, i, j;
+
+    for (p = 0; p < s->nprocess; p++) {
+        s->sendcounts[p] = per_process;
+
+        if (rem > 0) {
+            s->sendcounts[p]++;
+            rem--;
+        }
+        sum+= s->sendcounts[p];
+        i = sum/g->tiles_per_side;
+        j = sum%g->tiles_per_side;
+
+        s->disp[p] = ((g->tiles_per_side * g->tile_size )*i + j)*g->tile_size;
+    }
+    
+
+    //based on how many tile you were assigned, allocate continuous memory to
+    //receive initial rat positions
+    s->my_nodes= g->tile_size * g->tile_size * s->sendcounts[s->process_id];
+    s->local = int_alloc(s->my_nodes);
+
+
+
     //RATS
     MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(s->rat_count, g->nnode, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+
 
     //GRAPH
     MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
@@ -178,9 +225,9 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
+#else
+    s->local = int_alloc(s->nnodes);
 #endif
-
-
     double start = currentSeconds();
 
     simulate(s, steps, update_mode, dinterval, display);
