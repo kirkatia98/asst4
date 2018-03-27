@@ -1,6 +1,5 @@
 #include "crun.h"
 
-#define MPI 1
 
 //Fetch pre computed weight for that count
 static inline double compute_weight(state_t *s, int nid) {
@@ -76,7 +75,6 @@ void take_census(state_t *s) {
         }
     }
 }
-
 
 
 #define NEIGHBORS 16
@@ -237,9 +235,7 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
 #if DEBUG
     show_weights(s);
 #endif
-#if MPI
 
-#endif
 
     for (i = 0; i < count; i++) {
 
@@ -253,7 +249,6 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
         MPI_Barrier();
 #endif
     }
-
 
     if (display && mpi_master)
 	    done();

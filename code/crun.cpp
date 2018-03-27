@@ -5,8 +5,6 @@
 
 #include "crun.h"
 
-#define MPI 1
-
 
 
 static void usage(char *name) {
@@ -204,12 +202,12 @@ int main(int argc, char *argv[]) {
 
         s->disp[p] = ((g->tiles_per_side * g->tile_size )*i + j)*g->tile_size;
     }
-    
+
 
     //based on how many tile you were assigned, allocate continuous memory to
     //receive initial rat positions
     s->my_nodes= g->tile_size * g->tile_size * s->sendcounts[s->process_id];
-    s->local = int_alloc(s->my_nodes);
+
 
 
 
@@ -226,8 +224,10 @@ int main(int argc, char *argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 #else
-    s->local = int_alloc(s->nnodes);
+    s->my_nodes = s->g->nnode;
 #endif
+    s->local = int_alloc(s->my_nodes);
+
     double start = currentSeconds();
 
     simulate(s, steps, update_mode, dinterval, display);

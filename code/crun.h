@@ -2,7 +2,7 @@
 
 /* Defining variable MPI enables use of MPI primitives */
 #ifndef MPI
-#define MPI 1
+#define MPI 0
 #endif
 
 #include <cstdio>
@@ -112,14 +112,15 @@ typedef struct {
 
     double *pre_computed;
 
+    int * local;        //not allocated at first, size depends on how many tiles
+    int my_nodes;
 #if MPI
     //mvscatter stuff
     int *sendcounts;
     int *disp;
     MPI_Datatype tile_type;
-    int * local;        //not allocated at first, size depends on how many tiles
+
     int side_length;
-    int my_nodes;
 #endif
 
 } state_t;
