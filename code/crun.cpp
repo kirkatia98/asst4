@@ -158,17 +158,17 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#if MPI
+#ifdef MPI
     //FOR SENDING TILES ONLY
     MPI_Datatype tile_type, resize_tile;
-    int dim = 2;
+#define DIM 2
 
-    int sizes[dim]    = {g->nrow,g->nrow};  /* size of global array */
-    int subsizes[dim] = {g->tile_size,g->tile_size};  /* size of sub-region */
-    int starts[dim]   = {0,0};
+    int sizes[DIM]    = {g->nrow,g->nrow};  /* size of global array */
+    int subsizes[DIM] = {g->tile_size,g->tile_size};  /* size of sub-region */
+    int starts[DIM]   = {0,0};
 
     /*creates a type that is tile_size by tile_size*/
-    MPI_Type_create_subarray(dim , sizes, subsizes, starts, MPI_ORDER_C,
+    MPI_Type_create_subarray(DIM , sizes, subsizes, starts, MPI_ORDER_C,
                              MPI_INT, &tile_type);
     /* changes the width to be 1*/
     MPI_Type_create_resized(tile_type, 0, g->tile_size*sizeof(int), &resize_tile);
