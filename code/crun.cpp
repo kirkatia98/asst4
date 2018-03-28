@@ -8,7 +8,7 @@
 #if MPI
 #if DEBUG
 static void DebugWait(int rank) {
-    char    a;
+    char a;
 
     if(rank == 0) {
         scanf("%c", &a);
@@ -122,11 +122,6 @@ int main(int argc, char *argv[]) {
 	    exit(1);
 	}
     }
-#if MPI
-    #if DEBUG
-    DebugWait(s->process_id);
-#endif
-#endif
     if (mpi_master) {
         if (gfile == NULL) {
             outmsg("Need graph file\n");
@@ -266,6 +261,13 @@ int main(int argc, char *argv[]) {
     s->local = int_alloc(s->g->nnode);
     s->my_nodes = s->g->nnode;
 #endif
+
+#if MPI
+    #if DEBUG
+    DebugWait(s->process_id);
+#endif
+#endif
+
     if(s->process_id >= s->nprocess) //when only one process delegated to task
     {
         //do nothing if process 1 or higher
