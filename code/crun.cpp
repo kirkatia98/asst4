@@ -107,6 +107,11 @@ int main(int argc, char *argv[]) {
 	    exit(1);
 	}
     }
+#if MPI
+    #if DEBUG
+    DebugWait();
+#endif
+#endif
     if (mpi_master) {
         if (gfile == NULL) {
             outmsg("Need graph file\n");
@@ -152,94 +157,129 @@ int main(int argc, char *argv[]) {
         init_vars* V = (init_vars*)vars;
         g = new_graph(V->nnode, V->nedge, V->tile_size);
         s = new_rats(g, V->nrat, V->global_seed);
+
+        g->tiles_per_side = vars->tiles_per_side;
 #endif
+    }
+    //if nrow not divisible by tile size, just run on one processor
+    if(g->nrow % g->tile_size != 0)
+    {
+        s->nprocess = 1;
+
     }
     s->nprocess = process_count;
     s->process_id = process_id;
 
 
-#ifdef MPI
-    //FOR SENDING TILES ONLY
-    MPI_Datatype tile_type, resize_tile;
-#define DIM 2
+#if MPI
+    #define DIM 2
 
-    int sizes[DIM]    = {g->nrow,g->nrow};  /* size of global array */
-    int subsizes[DIM] = {g->tile_size,g->tile_size};  /* size of sub-region */
-    int starts[DIM]   = {0,0};
+    if(s->nprocess > 1) {
+        //FOR SENDING TILES ONLY
+        MPI_Datatype tile_type, resize_tile;
 
-    /*creates a type that is tile_size by tile_size*/
-    MPI_Type_create_subarray(DIM , sizes, subsizes, starts, MPI_ORDER_C,
-                             MPI_INT, &tile_type);
-    /* changes the width to be 1*/
-    MPI_Type_create_resized(tile_type, 0, g->tile_size*sizeof(int), &resize_tile);
-    MPI_Type_commit(&resize_tile);
-    MPI_Type_commit(&tile_type);
+        int sizes[DIM] = {g->nrow, g->nrow};  /* size of global array */
+        int subsizes[DIM] = {g->tile_size, g->tile_size};  /* size of sub-region */
+        int starts[DIM] = {0, 0};
 
-    s->tile_type = tile_type; //save the tile type we just created
+        /*creates a type that is tile_size by tile_size*/
+        MPI_Type_create_subarray(DIM, sizes, subsizes, starts, MPI_ORDER_C,
+                                 MPI_INT, &tile_type);
+        /* changes the width to be 1*/
+        MPI_Type_create_resized(tile_type, 0, g->tile_size * sizeof(int),
+                                &resize_tile);
+        MPI_Type_commit(&resize_tile);
+        MPI_Type_commit(&tile_type);
 
-    //DISPLACEMENTS AND SEND COUNTS
+        s->tile_type = tile_type; //save the tile type we just created
 
-    //how many tiles each process computes
-    int per_process = (g->tiles_per_side*g->tiles_per_side)/ s->nprocess;
+        //DISPLACEMENTS AND SEND COUNTS
 
-    // elements remaining after division among processes
-    int rem = (g->tiles_per_side*g->tiles_per_side)% s->nprocess;
+        //how many tiles each process computes
+        int per_process = (g->tiles_per_side * g->tiles_per_side) / s->nprocess;
 
-    // Sum of counts. Used to calculate displacements
-    int sum = 0;
-    int p, i, j;
+        // elements remaining after division among processes
+        int rem = (g->tiles_per_side * g->tiles_per_side) % s->nprocess;
 
-    for (p = 0; p < s->nprocess; p++) {
-        s->sendcounts[p] = per_process;
+        // Sum of counts. Used to calculate displacements
+        int sum = 0;
+        int p, i, j;
 
-        if (rem > 0) {
-            s->sendcounts[p]++;
-            rem--;
+        for (p = 0; p < s->nprocess; p++) {
+            s->sendcounts[p] = per_process;
+
+            if (rem > 0) {
+                s->sendcounts[p]++;
+                rem--;
+            }
+            sum += s->sendcounts[p];
+            i = sum / g->tiles_per_side;
+            j = sum % g->tiles_per_side;
+
+            s->disp[p] = ((g->tiles_per_side * g->tile_size) * i + j) * g->tile_size;
         }
-        sum+= s->sendcounts[p];
-        i = sum/g->tiles_per_side;
-        j = sum%g->tiles_per_side;
 
-        s->disp[p] = ((g->tiles_per_side * g->tile_size )*i + j)*g->tile_size;
+
+        //based on how many tile you were assigned, allocate continuous memory to
+        //receive initial rat positions
+        int my_nodes = g->tile_size * g->tile_size * s->sendcounts[s->process_id];
+        s->local = int_alloc(my_nodes);
+
+
+
+        //RATS
+        MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+
+
+        //GRAPH
+        MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+
+        MPI_Barrier(MPI_COMM_WORLD);
     }
-
-
-    //based on how many tile you were assigned, allocate continuous memory to
-    //receive initial rat positions
-    s->my_nodes= g->tile_size * g->tile_size * s->sendcounts[s->process_id];
-
-
-
-
-    //RATS
-    MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-
-
-    //GRAPH
-    MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-
-    MPI_Barrier(MPI_COMM_WORLD);
+    else
+        s->local = int_alloc(s->g->nnode);
 #else
-    s->my_nodes = s->g->nnode;
+    s->local = int_alloc(s->g->nnode);
 #endif
-    s->local = int_alloc(s->my_nodes);
-
-    double start = currentSeconds();
-
-    simulate(s, steps, update_mode, dinterval, display);
-
-    double delta = currentSeconds() - start;
-
-    if (mpi_master) {
-        outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
+    if(s->process_id >= s->nprocess) //when only one process delegated to task
+    {
+        //do nothing if process 1 or higher
     }
+    else
+    {
+        double start = currentSeconds();
+
+        simulate(s, steps, update_mode, dinterval, display);
+
+        double delta = currentSeconds() - start;
+
+        if (mpi_master) {
+            outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
+        }
+    }
+
 #if MPI
     MPI_Finalize();
 #endif    
     return 0;
 }
+#if MPI
+#if DEBUG
+static void DebugWait(int rank) {
+    char    a;
+
+    if(rank == 0) {
+        scanf("%c", &a);
+        printf("%d: Starting now\n", rank);
+    }
+
+    MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
+    printf("%d: Starting now\n", rank);
+}
+#endif
+#endif
 

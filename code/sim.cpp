@@ -167,27 +167,25 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
     for (rid = bstart; rid < bstart + bcount; rid++)
     {
-        s->next_rat_position[rid] = next_random_move(s, rid);
         int onid = s->rat_position[rid];
-        int nnid = s->next_rat_position[rid];
+
+        if(onid) {
+            s->next_rat_position[rid] = next_random_move(s, rid);
+            int nnid = s->next_rat_position[rid];
+        }
+
+
     }
     int i;
-    for(i = 0; i < s->my_nodes; i++)
+    for(i = 0; i < g->nnode; i++)
     {
         s->local+= s->process_id;
     }
 
-    //update gsums and redistribute
-    if(s->process_id == 0)
-    {
-        take_census(s);
-    }
+
 #if MPI
     MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->rat_count, s->sendcounts,
                 s->disp, s->tile_type, 0, MPI_COMM_WORLD);
-    MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-
-    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 }
@@ -198,7 +196,16 @@ static void run_step(state_t *s, int batch_size) {
         int rest = s->nrat - b;
         bcount = rest < batch_size ? rest : batch_size;
         process_batch(s, b, bcount);
+        //update gsums and redistribute
+        if(s->process_id == 0)
+        {
+            take_census(s);
+        }
+#if MPI
+        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
 
+        MPI_Barrier(MPI_COMM_WORLD);
+#endif
     }
 }
 

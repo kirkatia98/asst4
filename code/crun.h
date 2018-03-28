@@ -59,8 +59,6 @@ typedef struct {
     int nedge;
     int tile_size;
     int tiles_per_side;
-
-
     int nrat;
     random_t global_seed;
 } init_vars;
@@ -71,6 +69,7 @@ typedef struct {
     int nnode;
     int nedge;
     int nrow;  /* == sqrt(nnode) */
+
     int tile_size;  /* Maximum number of consecutive rows having non-grid connections */
     int tiles_per_side;
 
@@ -112,15 +111,13 @@ typedef struct {
 
     double *pre_computed;
 
-    int * local;        //not allocated at first, size depends on how many tiles
-    int my_nodes;
+    int *local;        //not allocated at first, size depends on how many tiles
 #if MPI
     //mvscatter stuff
     int *sendcounts;
     int *disp;
     MPI_Datatype tile_type;
 
-    int side_length;
 #endif
 
 } state_t;

@@ -174,27 +174,6 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
 
     g->tiles_per_side = g->nrow/g->tile_size;
 
-    //if nrow not divisible by tile size, extend the graph to be multiple
-    // of tile size
-    if(g->nrow % g->tile_size != 0)
-    {
-        g->tiles_per_side++;
-        s->side_length = g->tiles_per_side * g->tile_size;
-        int* new_rat_counts = int_alloc(s->side_length * s->side_length);
-
-        int i, j;
-        for(i = 0 ; i < g->nrow; i++)
-        {
-            for(j = 0; j < g->nrow; j++)
-            {
-                new_rat_counts[i*s->side_length +j] = s->rat_count[i*g->nrow + j];
-            }
-        }
-        free(s->rat_count);
-        s->rat_count = new_rat_counts;
-    }
-    else //use side length from now on
-        s->side_length = g->nrow;
 #endif
 
     seed_rats(s);
@@ -204,19 +183,14 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
 
 /* print state of nodes */
 void show(state_t *s, bool show_counts) {
-    int nid;
     graph_t *g = s->g;
     printf("STEP %d %d\n", g->nnode, s->nrat);
     if (show_counts) {
-        int i, j;
+        int i;
 
-
-        for(i = 0 ; i < g->nrow; i++)
+        for(i = 0 ; i < g->nnode; i++)
         {
-            for(j = 0; j < g->nrow; j++)
-            {
-                printf("%d\n", s->rat_count[i*s->side_length + j]);
-            }
+            printf("%d\n", s->rat_count[i]);
         }
     }
     printf("END\n");
