@@ -179,7 +179,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     int i;
     for(i = 0; i < g->nnode; i++)
     {
-        s->local+= s->process_id;
+        s->local+= s->process_id + 10;
     }
 
 
@@ -202,7 +202,8 @@ static void run_step(state_t *s, int batch_size) {
             take_census(s);
         }
 #if MPI
-        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->g->gsums, s->g->nnode + s->g->nedge, MPI_INT, 0,
+        MPI_COMM_WORLD);
 
         MPI_Barrier(MPI_COMM_WORLD);
 #endif

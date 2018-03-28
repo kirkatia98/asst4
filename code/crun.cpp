@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
         g = new_graph(V->nnode, V->nedge, V->tile_size);
         s = new_rats(g, V->nrat, V->global_seed);
 
-        g->tiles_per_side = vars->tiles_per_side;
+        g->tiles_per_side = V->tiles_per_side;
 #endif
     }
     //if nrow not divisible by tile size, just run on one processor
@@ -221,9 +221,9 @@ int main(int argc, char *argv[]) {
 
 
         //based on how many tile you were assigned, allocate continuous memory to
-        //receive initial rat positions
-        int my_nodes = g->tile_size * g->tile_size * s->sendcounts[s->process_id];
-        s->local = int_alloc(my_nodes);
+        //receive initial rat position
+        s->my_nodes = g->tile_size * g->tile_size * s->sendcounts[s->process_id];
+        s->local = int_alloc(s->my_nodes);
 
 
 
@@ -241,9 +241,15 @@ int main(int argc, char *argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
     }
     else
+    {
         s->local = int_alloc(s->g->nnode);
+        s->my_nodes = s->g->nnode;
+    }
+
+
 #else
     s->local = int_alloc(s->g->nnode);
+    s->my_nodes = s->g->nnode;
 #endif
     if(s->process_id >= s->nprocess) //when only one process delegated to task
     {

@@ -112,6 +112,7 @@ typedef struct {
     double *pre_computed;
 
     int *local;        //not allocated at first, size depends on how many tiles
+    int my_nodes;
 #if MPI
     //mvscatter stuff
     int *sendcounts;
