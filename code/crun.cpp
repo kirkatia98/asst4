@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
             done();
             exit(1);
         }
-
+        take_census(s);
 #if MPI
         /* The master should distribute the graph & the rats to the other nodes */
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#if MPI
+#ifdef MPI
     #define DIM 2
 
     if(s->nprocess > 1) {
@@ -240,7 +240,6 @@ int main(int argc, char *argv[]) {
         //receive initial rat position
         s->my_nodes = g->tile_size * g->tile_size * s->sendcounts[s->process_id];
         s->local = int_alloc(s->my_nodes);
-
 
 
         //RATS
