@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#ifdef MPI
+#if MPI
     #define DIM 2
 
     if(s->nprocess > 1) {
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
         int sum = 0;
         int p, i, j;
 
-        s->disp[0] = 0
+        s->disp[0] = 0;
         for (p = 0; p < s->nprocess; p++) {
             s->sendcounts[p] = per_process;
 
