@@ -78,7 +78,7 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->sendcounts = int_alloc(s->nprocess);
     ok = ok && s->sendcounts != NULL;
 
-    s->disp = int_alloc(s->nprocess);
+    s->disp = int_alloc(s->nprocess + 1);
     ok = ok && s->disp != NULL;
 #endif
     if (!ok) {

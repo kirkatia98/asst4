@@ -205,6 +205,7 @@ int main(int argc, char *argv[]) {
         int sum = 0;
         int p, i, j;
 
+        s->disp[0] = 0
         for (p = 0; p < s->nprocess; p++) {
             s->sendcounts[p] = per_process;
 
@@ -216,7 +217,7 @@ int main(int argc, char *argv[]) {
             i = sum / g->tiles_per_side;
             j = sum % g->tiles_per_side;
 
-            s->disp[p] = ((g->tiles_per_side * g->tile_size) * i + j) * g->tile_size;
+            s->disp[p+1] = ((g->tiles_per_side * g->tile_size) * i + j) * g->tile_size;
         }
 
 
