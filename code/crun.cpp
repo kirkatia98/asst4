@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     }
 #if MPI
     #if DEBUG
-    DebugWait();
+    DebugWait(s->process_id);
 #endif
 #endif
     if (mpi_master) {
