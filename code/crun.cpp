@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#ifdef MPI
+#if MPI
     #define DIM 2
 
     if(s->nprocess > 1) {
