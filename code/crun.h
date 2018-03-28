@@ -96,8 +96,7 @@ typedef struct {
     /* State representation */
     // Node Id for each rat.  Length=R
     int *rat_position;
-    // Next node Id for each rat.  Length=R
-    int *next_rat_position;
+
     // Rat seeds.  Length = R
     random_t *rat_seed;
 
@@ -113,6 +112,7 @@ typedef struct {
 
     int *local;        //not allocated at first, size depends on how many tiles
     int my_nodes;
+    int *delta;
 #if MPI
     //mvscatter stuff
     int *sendcounts;

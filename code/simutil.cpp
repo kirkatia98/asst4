@@ -62,9 +62,6 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->rat_position = int_alloc(nrat);
     ok = ok && s->rat_position != NULL;
 
-    s->next_rat_position = int_alloc(nrat);
-    ok = ok && s->next_rat_position != NULL;
-
     s->rat_seed = rt_alloc(nrat);
     ok = ok && s->rat_seed != NULL;
 

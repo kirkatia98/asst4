@@ -46,9 +46,6 @@ static void show_weights(state_t *s) {
 void take_census(state_t *s) {
     graph_t *g = s->g;
     int nnode = g->nnode;
-    int *rat_position = s->rat_position;
-    int *rat_count = s->rat_count;
-    int nrat = s->nrat;
 
 
 
@@ -158,31 +155,26 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     graph_t *g = s->g;
     int rid, nid, eid;
     int nodes = g->nnode;
+    int i, j;
 
+    //for each tile
 
     for (rid = bstart; rid < bstart + bcount; rid++)
     {
         int onid = s->rat_position[rid];
 
-        if(onid) {
-            s->next_rat_position[rid] = next_random_move(s, rid);
-            int nnid = s->next_rat_position[rid];
+        i = onid/g->nrow;
+        j = onid % g->nrow;
+
+        //within tile
+        if() {
+            int nnid = next_random_move(s, rid);
+
+            s->local[onid]--;
+            s->local[nnid]++;
+            s->rat_position[rid] = nnid;
         }
-
-
     }
-    int i;
-    for(i = 0; i < s->my_nodes; i++)
-    {
-        s->local[i] += 10 + s->process_id;
-    }
-
-
-#if MPI
-    if(s->nprocess > 1)
-        MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->rat_count, s->sendcounts,
-        s->disp, s->tile_type, 0, MPI_COMM_WORLD);
-#endif
 
 }
 
@@ -192,9 +184,17 @@ static void run_step(state_t *s, int batch_size) {
         int rest = s->nrat - b;
         bcount = rest < batch_size ? rest : batch_size;
         process_batch(s, b, bcount);
+
+#if MPI
+        if(s->nprocess > 1)
+            MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->delta, s->sendcounts,
+                        s->disp, s->tile_type, 0, MPI_COMM_WORLD);
+#endif
+
         //update gsums and redistribute
         if(s->process_id == 0)
         {
+
             take_census(s);
         }
 #if MPI
@@ -237,12 +237,14 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
 	    show(s, show_counts);
     }
 
-
+/*
 #if MPI
     if(s->nprocess > 1)
-        MPI_Scatterv(s->rat_count, s->sendcounts, s->disp, s->tile_type, s->local,
+        MPI_Scatterv(s->rat_count, s->sendcounts, s->disp, s->tile_type,s->local,
                      s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
+
 #endif
+*/
 
     for (i = 0; i < count; i++) {
 

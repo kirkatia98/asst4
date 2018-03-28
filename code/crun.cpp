@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#if MPI
+#ifdef MPI
     #define DIM 2
 
     if(s->nprocess > 1) {
@@ -242,6 +242,7 @@ int main(int argc, char *argv[]) {
         MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->rat_count, g->nnode, MPI_INT, 0, MPI_COMM_WORLD);
 
 
         //GRAPH
