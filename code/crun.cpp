@@ -5,6 +5,21 @@
 
 #include "crun.h"
 
+#if MPI
+#if DEBUG
+static void DebugWait(int rank) {
+    char    a;
+
+    if(rank == 0) {
+        scanf("%c", &a);
+        printf("%d: Starting now\n", rank);
+    }
+
+    MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
+    printf("%d: Starting now\n", rank);
+}
+#endif
+#endif
 
 
 static void usage(char *name) {
@@ -171,7 +186,7 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#if MPI
+#ifdef MPI
     #define DIM 2
 
     if(s->nprocess > 1) {
@@ -274,19 +289,5 @@ int main(int argc, char *argv[]) {
 #endif    
     return 0;
 }
-#if MPI
-#if DEBUG
-static void DebugWait(int rank) {
-    char    a;
 
-    if(rank == 0) {
-        scanf("%c", &a);
-        printf("%d: Starting now\n", rank);
-    }
-
-    MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
-    printf("%d: Starting now\n", rank);
-}
-#endif
-#endif
 
