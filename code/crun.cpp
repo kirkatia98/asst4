@@ -237,6 +237,7 @@ int main(int argc, char *argv[]) {
         s->local = int_alloc(s->my_nodes);
 
 
+
         //RATS
         MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
@@ -268,6 +269,11 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
 
+    if(s->local == NULL)
+    {
+        outmsg("Couldn't allocate storage for state\n");
+        return 1;
+    }
     if(s->process_id >= s->nprocess) //when only one process delegated to task
     {
         //do nothing if process 1 or higher

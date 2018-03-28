@@ -159,11 +159,6 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     int rid, nid, eid;
     int nodes = g->nnode;
 
-#if MPI
-
-    MPI_Scatterv(s->rat_count, s->sendcounts, s->disp, s->tile_type, s->local,
-                 s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
-#endif
 
     for (rid = bstart; rid < bstart + bcount; rid++)
     {
@@ -177,15 +172,16 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
     }
     int i;
-    for(i = 0; i < g->nnode; i++)
+    for(i = 0; i < s->my_nodes; i++)
     {
-        s->local+= s->process_id + 10;
+        s->local[i] += 10 + s->process_id;
     }
 
 
 #if MPI
-    MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->rat_count, s->sendcounts,
-                s->disp, s->tile_type, 0, MPI_COMM_WORLD);
+    if(s->nprocess > 1)
+        MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->rat_count, s->sendcounts,
+        s->disp, s->tile_type, 0, MPI_COMM_WORLD);
 #endif
 
 }
@@ -240,10 +236,13 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
     if (display && mpi_master) {
 	    show(s, show_counts);
     }
-#if DEBUG
-    show_weights(s);
-#endif
 
+
+#if MPI
+    if(s->nprocess > 1)
+        MPI_Scatterv(s->rat_count, s->sendcounts, s->disp, s->tile_type, s->local,
+                     s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
 
     for (i = 0; i < count; i++) {
 
