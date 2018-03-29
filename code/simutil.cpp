@@ -87,6 +87,25 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     return s;
 }
 
+void free_state(state_t *s)
+{
+    if(s->process_id == 0)
+    {
+        free(s->rat_count);
+        free(s->pre_computed);
+    }
+    free(s->local_rat_count);
+    free(s->rat_position);
+    free(s->next_position);
+    free(s->rat_seed);
+    free(s->delta);
+#if MPI
+    free(s->send);
+    free(s->disp);
+#endif
+    free(s);
+}
+
 /* Set seed values for the rats.  Maybe you could use multiple threads ... */
 static void seed_rats(state_t *s) {
     random_t global_seed = s->global_seed;
