@@ -182,10 +182,15 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
     int srat = s->disp[s->process_id];
     int erat = s->disp[s->process_id + 1];
+
+    //broadcast current batch positions
+    MPI_Bcast(s->rat_position+ bstart, bcount, MPI_INT, 0, MPI_COMM_WORLD);
+
 #else
     int srat = bstart;
     int erat = bstart + bcount;
 #endif
+
 
     //for each rat compute the next positions
     for (rid = srat; rid < erat; rid++)
