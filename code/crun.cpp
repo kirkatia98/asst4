@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
         void* vars = malloc(sizeof(init_vars));
         MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
         init_vars* V = (init_vars*)vars;
-        g = new_graph(V->nnode, V->nedge, V->tile_size, process_count);
+        g = new_graph(V->nnode, V->nedge, V->tile_size);
         s = new_rats(g, V->nrat, V->global_seed);
 
         g->tiles_per_side = V->tiles_per_side;
@@ -235,19 +235,17 @@ int main(int argc, char *argv[]) {
 #if DEBUG
     DebugWait(s->process_id);
 #endif
+    //scatter the rat counts one time only
+    MPI_Scatterv(s->rat_count, g->send, g->disp, MPI_INT,
+                s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
 #endif
+
 
     if(s->local_rat_count == NULL)
     {
         outmsg("Couldn't allocate storage for state\n");
         return 1;
     }
-
-#if MPI
-    //scatter the rat counts one time only
-    MPI_Scatterv(s->rat_count, g->send, g->disp, MPI_INT,
-                s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
-#endif
     else
     {
         double start = currentSeconds();
