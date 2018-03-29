@@ -2,7 +2,7 @@
 
 /* Defining variable MPI enables use of MPI primitives */
 #ifndef MPI
-#define MPI 1
+#define MPI 0
 #endif
 
 #include <cstdio>

@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if MPI
-    #if DEBUG
+#if DEBUG
     DebugWait(s->process_id);
 #endif
 #endif
