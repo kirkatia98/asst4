@@ -179,6 +179,10 @@ int main(int argc, char *argv[]) {
     s->nprocess = process_count;
     s->process_id = process_id;
 
+    if(process_id > 8)
+    {
+        return 0;
+    }
 
 #if MPI
 #define DIM 2
