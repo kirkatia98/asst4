@@ -192,7 +192,6 @@ void show(state_t *s, bool show_counts) {
     printf("STEP %d %d\n", g->nnode, s->nrat);
     if (show_counts) {
         int i;
-
         for(i = 0 ; i < g->nnode; i++)
         {
             printf("%d\n", s->rat_count[i]);

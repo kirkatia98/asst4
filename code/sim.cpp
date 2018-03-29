@@ -183,9 +183,6 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     int srat = s->disp[s->process_id];
     int erat = s->disp[s->process_id + 1];
 #else
-    int snode = 0
-    int enode = g->nnodes;
-
     int srat = bstart;
     int erat = bstart + bcount;
 #endif

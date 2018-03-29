@@ -7,7 +7,7 @@
 
 
 
-graph_t *new_graph(int nnode, int nedge, int tile_max, int nprocess) {
+graph_t *new_graph(int nnode, int nedge, int tile_max) {
     bool ok = true;
     graph_t *g = (graph_t*) malloc(sizeof(graph_t));
 

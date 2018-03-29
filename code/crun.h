@@ -129,7 +129,7 @@ typedef struct {
     
 
 /*** Functions in graph.c. ***/
-graph_t *new_graph(int nnode, int nedge, int tile_max, int nprocess);
+graph_t *new_graph(int nnode, int nedge, int tile_max);
 
 void free_graph(graph_t *g);
 
