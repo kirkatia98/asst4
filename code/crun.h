@@ -105,19 +105,23 @@ typedef struct {
     // Rat seeds.  Length = R
     random_t *rat_seed;
 
-    /* Redundant encodings to speed computation */
-    // Count of number of rats at each node.  Length = N.
-    int *rat_count;
+
     /* Computed parameters */
     double load_factor;  // nrat/nnnode
     update_t update_mode; 
     int batch_size;   // Batch size for batch mode
 
-    double *pre_computed;
 
+    int *delta;                   //storing local differences
     int *local_rat_count;        //not allocated at first, size depends on how many tiles
     int my_nodes;
-    int *delta;
+
+    /* Redundant encodings to speed computation */
+    // Count of number of rats at each node.  Length = N.
+    //ONLY MASTER
+    int *rat_count;
+    double *pre_computed;
+
 
 #if MPI
     //all gather

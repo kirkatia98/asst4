@@ -59,10 +59,6 @@ int main(int argc, char *argv[]) {
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &process_count);
     MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
-    if(process_id > 8)
-    {
-        return 0;
-    }
 #endif
 
     bool mpi_master = process_id == 0;
@@ -150,6 +146,11 @@ int main(int argc, char *argv[]) {
         /* The master should distribute the graph & the rats to the other nodes */
 
         init_vars *vars = (init_vars*) malloc(sizeof(init_vars));
+        if(vars == NULL)
+        {
+            outmsg("Couldn't allocate storage for init vars, master\n");
+            return 1;
+        }
         vars->nnode = g->nnode;
         vars->nedge = g->nedge;
         vars->tile_size = g->tile_size;
@@ -166,6 +167,12 @@ int main(int argc, char *argv[]) {
 #if MPI
         //Receive and make copies of the state and graph
         void* vars = malloc(sizeof(init_vars));
+        if(vars == NULL)
+        {
+            outmsg("Couldn't allocate storage for init vars, pid %d\n", process_id);
+            return 1;
+        }
+
         MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
         init_vars* V = (init_vars*)vars;
         g = new_graph(V->nnode, V->nedge, V->tile_size);
@@ -203,6 +210,12 @@ int main(int argc, char *argv[]) {
         g->send = int_alloc(process_count);
         g->disp = int_alloc(process_count + 1);
 
+        if(g->disp == NULL || g->send == NULL)
+        {
+            outmsg("Couldn't allocate storage for send and disp for graph\n");
+            return 1;
+        }
+
         for (p = 0; p < s->nprocess; p++) {
             g->send[p] = per_process;
 
@@ -234,7 +247,6 @@ int main(int argc, char *argv[]) {
 
         //RATS
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(s->pre_computed, s->nrat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         //GRAPH
         MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);

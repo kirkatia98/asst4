@@ -68,12 +68,6 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->rat_seed = rt_alloc(nrat);
     ok = ok && s->rat_seed != NULL;
 
-    s->rat_count = int_alloc(nnode);
-    ok = ok && s->rat_count != NULL;
-
-    s->pre_computed = double_alloc(nrat+1);
-    ok = ok && s->pre_computed != NULL;
-
     s->delta = int_alloc(s->my_nodes);
     ok = ok && s->delta != NULL;
 
@@ -84,7 +78,6 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->disp = int_alloc(s->nprocess + 1);
     ok = ok && s->disp != NULL;
 #endif
-
 
     if (!ok) {
 	outmsg("Couldn't allocate space for %d rats", nrat);
@@ -137,8 +130,15 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
 	outmsg("Graph contains %d nodes, but rat file has %d\n", g->nnode, nnode);
 	return NULL;
     }
-    
+
+    //allocate for Master process
     state_t *s = new_rats(g, nrat, global_seed);
+
+    s->pre_computed = double_alloc(nrat+1);
+    s->rat_count = int_alloc(nnode);
+
+    if(s->rat_count == NULL || s->pre_computed == NULL)
+        outmsg("Master process couldn't allocate rat count or pre-computed", nrat);
 
 
     for (r = 0; r < nrat; r++) {
@@ -163,6 +163,7 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
     {
         s->pre_computed[i] = mweight((double) i/s->load_factor);
     }
+
 
     memset(s->rat_count, 0, nnode * sizeof(int));
     //for each rat, look at its position and increment the correct node
