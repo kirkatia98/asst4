@@ -182,23 +182,6 @@ int main(int argc, char *argv[]) {
 
 #if MPI
 #define DIM 2
-        //FOR SENDING TILES ONLY
-        MPI_Datatype tile_type, resize_tile;
-
-        int sizes[DIM] = {g->nrow, g->nrow};  /* size of global array */
-        int subsizes[DIM] = {g->tile_size, g->tile_size};  /* size of sub-region */
-        int starts[DIM] = {0, 0};
-
-        /*creates a type that is tile_size by tile_size*/
-        MPI_Type_create_subarray(DIM, sizes, subsizes, starts, MPI_ORDER_C,
-                                 MPI_INT, &tile_type);
-        /* changes the width to be 1*/
-        MPI_Type_create_resized(tile_type, 0, g->tile_size * sizeof(int),
-                                &resize_tile);
-        MPI_Type_commit(&resize_tile);
-        MPI_Type_commit(&tile_type);
-
-        s->tile_type = tile_type; //save the tile type we just created
 
         //DISPLACEMENTS AND SEND COUNTS
         //how many tiles each process computes
@@ -230,7 +213,7 @@ int main(int argc, char *argv[]) {
         //based on how many tile you were assigned, allocate continuous memory to
         //receive initial rat position
         s->my_nodes = g->disp[s->process_id + 1] - g->disp[s->process_id];
-        s->local = int_alloc(s->my_nodes);
+        s->local_rat_count = int_alloc(s->my_nodes);
 
 
 
@@ -245,7 +228,6 @@ int main(int argc, char *argv[]) {
 
 
 #else
-    s->local = int_alloc(s->g->nnode);
     s->my_nodes = s->g->nnode;
 #endif
 
@@ -255,15 +237,17 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
 
-    if(s->local == NULL)
+    if(s->local_rat_count == NULL)
     {
         outmsg("Couldn't allocate storage for state\n");
         return 1;
     }
-    if(s->process_id >= s->nprocess) //when only one process delegated to task
-    {
-        //do nothing if process 1 or higher
-    }
+
+#if MPI
+    //scatter the rat counts one time only
+    MPI_Scatterv(s->rat_count, g->send, g->disp, MPI_INT,
+                s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
     else
     {
         double start = currentSeconds();

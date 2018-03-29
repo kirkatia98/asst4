@@ -115,7 +115,7 @@ typedef struct {
 
     double *pre_computed;
 
-    int *local;        //not allocated at first, size depends on how many tiles
+    int *local_rat_count;        //not allocated at first, size depends on how many tiles
     int my_nodes;
     int *delta;
 

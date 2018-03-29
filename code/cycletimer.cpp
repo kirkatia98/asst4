@@ -29,7 +29,7 @@
 
   // This uses the cycle counter of the processor.  Different
   // processors in the system will have different values for this.  If
-  // you process moves across processors, then the local time you
+  // you process moves across processors, then the local_rat_count time you
   // measure will likely be incorrect.  This is mostly for fine
   // grained measurements where the process is likely to be on the
   // same processor.  For more global things you should use the
