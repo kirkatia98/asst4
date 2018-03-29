@@ -195,8 +195,8 @@ int main(int argc, char *argv[]) {
         int p, i, j;
 
 
-        g->send = int_alloc(nprocess);
-        g->disp = int_alloc(nprocess + 1);
+        g->send = int_alloc(process_count);
+        g->disp = int_alloc(process_count + 1);
 
         for (p = 0; p < s->nprocess; p++) {
             g->send[p] = per_process;
