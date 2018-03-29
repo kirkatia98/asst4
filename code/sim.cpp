@@ -245,7 +245,7 @@ static void run_step(state_t *s, int batch_size) {
         if(s->process_id == 0)
             take_census(s);
 #if MPI
-        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 #endif
 
         process_batch(s, b, bcount);
