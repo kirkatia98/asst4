@@ -155,16 +155,45 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     graph_t *g = s->g;
     int rid, nid, eid;
     int nodes = g->nnode;
-    int i, j;
 
-    //for each tile
+    //divide rat batch among processors
+    int i, j, p;
+    int per_process = bcount/s->nprocess;
+    int rem =  bcount%s->nprocess;
+    int sum = 0;
+
+    s->disp[0] = bstart;
+
+    for (p = 0; p < s->nprocess; p++) {
+        s->send[p] = per_process;
+
+        if (rem > 0) {
+            s->send[p]++;
+            rem--;
+        }
+        sum += s->send[p];
+        s->disp[p+1] = bstart + sum;
+    }
+
+
+
+    //for each rat compute the next positions
+    //scatter among all processors
+    for (rid = s->disp[s->process_id]; rid < s->disp[s->process_id + 1]; rid++)
+    {
+        s->next_position[rid] = next_random_move(s,rid);
+    }
+
+    //all gather for the batch of rats
+    MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, s->next_position, s->send,
+                   s->disp, MPI_INT,  MPI_COMM_WORLD);
 
     for (rid = bstart; rid < bstart + bcount; rid++)
     {
         int onid = s->rat_position[rid];
+        int nnid = s->next_position[rid];
 
-        i = onid/g->nrow;
-        j = onid % g->nrow;
+
 
         //within tile
         if() {
@@ -180,14 +209,23 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
 static void run_step(state_t *s, int batch_size) {
     int b, bcount;
+    graph_t* g = s->g;
+
     for (b = 0; b < s->nrat; b += batch_size) {
         int rest = s->nrat - b;
         bcount = rest < batch_size ? rest : batch_size;
+
+        take_census(s);
+#if MPI
+        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->rat_position, s->rat_count, MPI_INT, 0, MPI_COMM_WORLD);
+#endif
+
         process_batch(s, b, bcount);
 
 #if MPI
         if(s->nprocess > 1)
-            MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->delta, s->sendcounts,
+            MPI_Gatherv(s->local, s->my_nodes, MPI_INT, s->delta, s->send,
                         s->disp, s->tile_type, 0, MPI_COMM_WORLD);
 #endif
 
@@ -197,12 +235,6 @@ static void run_step(state_t *s, int batch_size) {
 
             take_census(s);
         }
-#if MPI
-        MPI_Bcast(s->g->gsums, s->g->nnode + s->g->nedge, MPI_INT, 0,
-        MPI_COMM_WORLD);
-
-        MPI_Barrier(MPI_COMM_WORLD);
-#endif
     }
 }
 

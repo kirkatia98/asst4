@@ -142,7 +142,6 @@ int main(int argc, char *argv[]) {
             done();
             exit(1);
         }
-        take_census(s);
 #if MPI
         /* The master should distribute the graph & the rats to the other nodes */
 
@@ -165,7 +164,7 @@ int main(int argc, char *argv[]) {
         void* vars = malloc(sizeof(init_vars));
         MPI_Bcast(vars, sizeof(init_vars), MPI_CHAR, 0, MPI_COMM_WORLD);
         init_vars* V = (init_vars*)vars;
-        g = new_graph(V->nnode, V->nedge, V->tile_size);
+        g = new_graph(V->nnode, V->nedge, V->tile_size, process_count);
         s = new_rats(g, V->nrat, V->global_seed);
 
         g->tiles_per_side = V->tiles_per_side;
@@ -181,10 +180,8 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#ifdef MPI
-    #define DIM 2
-
-    if(s->nprocess > 1) {
+#if MPI
+#define DIM 2
         //FOR SENDING TILES ONLY
         MPI_Datatype tile_type, resize_tile;
 
@@ -204,59 +201,47 @@ int main(int argc, char *argv[]) {
         s->tile_type = tile_type; //save the tile type we just created
 
         //DISPLACEMENTS AND SEND COUNTS
-
         //how many tiles each process computes
-        int per_process = (g->tiles_per_side * g->tiles_per_side) / s->nprocess;
+        int per_process = (g->tiles_per_side) / s->nprocess;
 
         // elements remaining after division among processes
-        int rem = (g->tiles_per_side * g->tiles_per_side) % s->nprocess;
+        int rem = (g->tiles_per_side) % s->nprocess;
 
         // Sum of counts. Used to calculate displacements
         int sum = 0;
         int p, i, j;
 
-        s->disp[0] = 0;
         for (p = 0; p < s->nprocess; p++) {
-            s->sendcounts[p] = per_process;
+            g->send[p] = per_process;
 
             if (rem > 0) {
-                s->sendcounts[p]++;
+                g->send[p]++;
                 rem--;
             }
-            sum += s->sendcounts[p];
-            i = sum / g->tiles_per_side;
-            j = sum % g->tiles_per_side;
+            g->send[p]*= g->nrow * g->tile_size;
+            g->disp[p] = sum;
+            sum += g->send[p];
 
-            s->disp[p+1] = ((g->tiles_per_side * g->tile_size) * i + j) * g->tile_size;
         }
+        //last process may get truncated chunck
+        g->disp[s->nprocess] = g->nnode;
 
 
         //based on how many tile you were assigned, allocate continuous memory to
         //receive initial rat position
-        s->my_nodes = g->tile_size * g->tile_size * s->sendcounts[s->process_id];
+        s->my_nodes = g->disp[s->process_id + 1] - g->disp[s->process_id];
         s->local = int_alloc(s->my_nodes);
 
 
 
         //RATS
-        MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(s->rat_count, g->nnode, MPI_INT, 0, MPI_COMM_WORLD);
-
 
         //GRAPH
         MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-
         MPI_Barrier(MPI_COMM_WORLD);
-    }
-    else
-    {
-        s->local = int_alloc(s->g->nnode);
-        s->my_nodes = s->g->nnode;
-    }
 
 
 #else

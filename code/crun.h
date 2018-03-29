@@ -2,7 +2,7 @@
 
 /* Defining variable MPI enables use of MPI primitives */
 #ifndef MPI
-#define MPI 0
+#define MPI 1
 #endif
 
 #include <cstdio>
@@ -73,6 +73,11 @@ typedef struct {
     int tile_size;  /* Maximum number of consecutive rows having non-grid connections */
     int tiles_per_side;
 
+#if MPI
+    int *send;
+    int *disp;
+#endif
+
     /* Graph structure representation */
     // Adjacency lists.  Includes self edge. Length=M+N.  Combined into single vector
     int *neighbor;
@@ -96,7 +101,7 @@ typedef struct {
     /* State representation */
     // Node Id for each rat.  Length=R
     int *rat_position;
-
+    int *next_position;
     // Rat seeds.  Length = R
     random_t *rat_seed;
 
@@ -113,19 +118,18 @@ typedef struct {
     int *local;        //not allocated at first, size depends on how many tiles
     int my_nodes;
     int *delta;
-#if MPI
-    //mvscatter stuff
-    int *sendcounts;
-    int *disp;
-    MPI_Datatype tile_type;
 
+#if MPI
+    //all gather
+    int *send;
+    int *disp;
 #endif
 
 } state_t;
     
 
 /*** Functions in graph.c. ***/
-graph_t *new_graph(int nnode, int nedge, int tile_max);
+graph_t *new_graph(int nnode, int nedge, int tile_max, int nprocess);
 
 void free_graph(graph_t *g);
 

@@ -62,6 +62,9 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->rat_position = int_alloc(nrat);
     ok = ok && s->rat_position != NULL;
 
+    s->next_position = int_alloc(nrat);
+    ok = ok && s->next_position != NULL;
+
     s->rat_seed = rt_alloc(nrat);
     ok = ok && s->rat_seed != NULL;
 
@@ -72,8 +75,8 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     ok = ok && s->pre_computed != NULL;
 
 #if MPI
-    s->sendcounts = int_alloc(s->nprocess);
-    ok = ok && s->sendcounts != NULL;
+    s->send = int_alloc(s->nprocess);
+    ok = ok && s->send != NULL;
 
     s->disp = int_alloc(s->nprocess + 1);
     ok = ok && s->disp != NULL;
@@ -170,7 +173,10 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
     }
 
     g->tiles_per_side = g->nrow/g->tile_size;
-
+    if(g->nrow%g->tile_size != 0)
+    {
+        g->tiles_per_side++;
+    }
 #endif
 
     seed_rats(s);
