@@ -25,14 +25,6 @@ graph_t *new_graph(int nnode, int nedge, int tile_max) {
     g->gsums = double_alloc(nedge+ nnode);
     ok = ok && g->gsums != NULL;
 
-#if MPI
-    g->send = int_alloc(nprocess);
-    ok = ok && g->send != NULL;
-
-    g->disp = int_alloc(nprocess + 1);
-    ok = ok && g->disp != NULL;
-#endif
-
 
     if (!ok) {
 	outmsg("Couldn't allocate graph data structures");
