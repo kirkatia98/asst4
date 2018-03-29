@@ -223,6 +223,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 #else
         s->rat_count[nid]+= s->delta[nid];
 #endif
+        s->delta[nid] = 0;
     }
 
 }
