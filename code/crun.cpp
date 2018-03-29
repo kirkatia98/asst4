@@ -250,19 +250,15 @@ int main(int argc, char *argv[]) {
 
 #endif
 
-    else
-    {
-        double start = currentSeconds();
+    double start = currentSeconds();
 
-        simulate(s, steps, update_mode, dinterval, display);
+    simulate(s, steps, update_mode, dinterval, display);
 
-        double delta = currentSeconds() - start;
+    double delta = currentSeconds() - start;
 
-        if (mpi_master) {
-            outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
-        }
+    if (mpi_master) {
+        outmsg("%d steps, %d rats, %.3f seconds\n", steps, s->nrat, delta);
     }
-
 #if MPI
     MPI_Finalize();
 #endif    
