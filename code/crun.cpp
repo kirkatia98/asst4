@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
 
         //RATS
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(s->pre_computed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->pre_computed, s->nrat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         //GRAPH
         MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
