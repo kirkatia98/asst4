@@ -217,8 +217,13 @@ int main(int argc, char *argv[]) {
         //based on how many tile you were assigned, allocate continuous memory to
         //receive initial rat position
         s->my_nodes = g->disp[s->process_id + 1] - g->disp[s->process_id];
-        s->local_rat_count = int_alloc(s->my_nodes);
 
+        s->local_rat_count = int_alloc(s->my_nodes);
+        if(s->local_rat_count == NULL)
+            {
+                outmsg("Couldn't allocate storage for state\n");
+                return 1;
+            }
 
 
         //RATS
@@ -242,14 +247,9 @@ int main(int argc, char *argv[]) {
     //scatter the rat counts one time only
     MPI_Scatterv(s->rat_count, g->send, g->disp, MPI_INT,
                 s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
+
 #endif
 
-
-    if(s->local_rat_count == NULL)
-    {
-        outmsg("Couldn't allocate storage for state\n");
-        return 1;
-    }
     else
     {
         double start = currentSeconds();
