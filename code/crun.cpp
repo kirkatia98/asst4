@@ -222,7 +222,7 @@ int main(int argc, char *argv[]) {
         s->local_rat_count = int_alloc(s->my_nodes);
         if(s->local_rat_count == NULL)
             {
-                outmsg("Couldn't allocate storage for state\n");
+                outmsg("Couldn't allocate storage for local\n");
                 return 1;
             }
 
@@ -239,8 +239,15 @@ int main(int argc, char *argv[]) {
 
 #else
     s->my_nodes = s->g->nnode;
-    s->delta = int_alloc(s->my_nodes);
+
 #endif
+
+    s->delta = int_alloc(s->my_nodes);
+    if(s->delta == NULL)
+    {
+        outmsg("Couldn't allocate storage for delta\n");
+        return 1;
+    }
 
 #if MPI
 #if DEBUG

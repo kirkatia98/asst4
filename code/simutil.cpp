@@ -74,6 +74,9 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->pre_computed = double_alloc(nrat+1);
     ok = ok && s->pre_computed != NULL;
 
+    s->delta = int_alloc(s->my_nodes);
+    ok = ok && s->delta != NULL;
+
 #if MPI
     s->send = int_alloc(s->nprocess);
     ok = ok && s->send != NULL;
