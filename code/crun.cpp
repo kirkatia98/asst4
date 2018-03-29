@@ -59,6 +59,10 @@ int main(int argc, char *argv[]) {
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &process_count);
     MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
+    if(process_id > 8)
+    {
+        return 0;
+    }
 #endif
 
     bool mpi_master = process_id == 0;
@@ -179,10 +183,7 @@ int main(int argc, char *argv[]) {
     s->nprocess = process_count;
     s->process_id = process_id;
 
-    if(process_id > 8)
-    {
-        return 0;
-    }
+
 
 #if MPI
 #define DIM 2
