@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
     s->process_id = process_id;
 
 
-#if MPI
+#ifdef MPI
 #define DIM 2
 
         //DISPLACEMENTS AND SEND COUNTS
@@ -210,6 +210,7 @@ int main(int argc, char *argv[]) {
             sum += g->send[p];
 
         }
+
         //last process may get truncated chunck
         g->disp[s->nprocess] = g->nnode;
 

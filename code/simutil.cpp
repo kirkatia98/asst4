@@ -171,7 +171,8 @@ state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed) {
 #if MPI
     if(g->tile_size == 1)
     {
-        g->tile_size = 10; //set the tiles for divisibility
+        g->tile_size = (10 < g->nrow ? 10 : g->nrow ); //set the tiles for
+        // divisibility
     }
 
     g->tiles_per_side = g->nrow/g->tile_size;
