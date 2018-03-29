@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &process_count);
     MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
 #endif
-    outmsg("Running with %d processes\n", process_count);
+
     bool mpi_master = process_id == 0;
     const char *optstring = "hg:r:R:n:s:u:i:q";
     while ((c = getopt(argc, argv, optstring)) != -1) {
@@ -123,6 +123,7 @@ int main(int argc, char *argv[]) {
 	}
     }
     if (mpi_master) {
+        outmsg("Running with %d processes\n", process_count);
         if (gfile == NULL) {
             outmsg("Need graph file\n");
             usage(argv[0]);
