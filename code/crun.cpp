@@ -238,6 +238,7 @@ int main(int argc, char *argv[]) {
 
 #else
     s->my_nodes = s->g->nnode;
+    s->delta = int_alloc(s->my_nodes);
 #endif
 
 #if MPI
