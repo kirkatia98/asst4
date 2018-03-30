@@ -156,8 +156,9 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     int rid, nid;
 
 #if MPI
-    int snode = g->disp[s->process_id];
-    int enode = g->disp[s->process_id + 1];
+    array_t* m = s->mpi;
+    int snode = m->ndisp[s->process_id];
+    int enode = m->ndisp[s->process_id + 1];
 #endif
 
     //for each rat compute the next positions (every processes)
@@ -245,6 +246,7 @@ static void process_rats(state_t *s, int bstart, int bcount) {
 static void run_step(state_t *s, int batch_size) {
     int b, bcount;
     graph_t* g = s->g;
+    array_t* m = s->mpi;
 
     for (b = 0; b < s->nrat; b += batch_size) {
         int rest = s->nrat - b;
