@@ -80,7 +80,7 @@ typedef struct {
 
     /* Graph structure representation */
     // Adjacency lists.  Includes self edge. Length=M+N.  Combined into single vector
-    int *neighbor;
+    short *neighbor;
     // Starting index for each adjacency list.  Length=N+1
     int *neighbor_start;
     double * gsums;         //accumulative sum of weights for self and neighbors
@@ -152,6 +152,7 @@ void outmsg(const char *fmt, ...);
 /* Allocate and zero arrays of int/double */
 int *int_alloc(size_t n);
 double *double_alloc(size_t n);
+short *short_alloc(size_t n);
 
 
 /* Read rat file and initialize simulation state */
