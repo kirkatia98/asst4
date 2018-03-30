@@ -217,7 +217,7 @@ static void process_rats(state_t *s, int bstart, int bcount) {
     //for each rat compute the next positions
     for (rid = srat; rid < erat; rid++)
     {
-        s->next_position[rid] = next_random_move(s, rid);
+        s->next_position[rid] = next_random_move(s, rid); 
     }
 #if MPI
     //all gather for the batch of rats
