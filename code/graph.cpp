@@ -37,10 +37,6 @@ void free_graph(graph_t *g) {
     free(g->neighbor);
     free(g->neighbor_start);
     free(g->gsums);
-#if MPI
-    free(g->disp);
-    free(g->send);
-#endif
     free(g);
 }
 

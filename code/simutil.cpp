@@ -189,8 +189,14 @@ void free_state(state_t *s)
     free(s->rat_seed);
     free(s->delta);
 #if MPI
-    free(s->send);
-    free(s->disp);
+    array_t* m = s->mpi;
+    free(m->rsend);
+    free(m->rdisp);
+    free(m->gdisp);
+    free(m->gsend);
+    free(m->nsend);
+    free(m->ndisp);
+    free(m);
 #endif
     free(s);
 }

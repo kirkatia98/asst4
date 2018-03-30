@@ -202,11 +202,11 @@ static void process_rats(state_t *s, int bstart, int bcount) {
 
 #if MPI
     array_t* m = s->mpi;
-    int snode = g->disp[s->process_id];
-    int enode = g->disp[s->process_id + 1];
+    int snode = m->ndisp[s->process_id];
+    int enode = m->ndisp[s->process_id + 1];
 
-    int srat = s->disp[s->process_id];
-    int erat = s->disp[s->process_id + 1];
+    int srat = m->rdisp[s->process_id];
+    int erat = m->rdisp[s->process_id + 1];
 #else
     int srat = bstart;
     int erat = bstart + bcount;
