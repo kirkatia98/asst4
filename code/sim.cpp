@@ -152,6 +152,7 @@ static inline int next_random_move(state_t *s, int r) {
 
 //TODO: do based on domain
 static void process_batch(state_t *s, int bstart, int bcount) {
+    graph_t *g = s->g;
     int rid, nid;
 
 #if MPI
@@ -233,6 +234,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
 static void run_step(state_t *s, int batch_size) {
     int b, bcount;
+    graph_t* g = s->g;
 
     for (b = 0; b < s->nrat; b += batch_size) {
         int rest = s->nrat - b;
