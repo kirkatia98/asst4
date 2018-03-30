@@ -16,12 +16,16 @@ void outmsg(const char *fmt, ...) {
 
 /* Allocate n int's and zero them out. */
 int *int_alloc(size_t n) {
-    return (int *) calloc(n, sizeof(int));
+    return (int *) malloc(n* sizeof(int));
+}
+short *short_alloc(size_t n)
+{
+    return (short*) malloc(n* sizeof(short));
 }
 
 /* Allocate n doubles's and zero them out. */
 double *double_alloc(size_t n) {
-    return (double *) calloc(n, sizeof(double));
+    return (double *) malloc(n* sizeof(double));
 }
 
 /* Allocate n random number seeds and zero them out.  */
@@ -59,10 +63,10 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 
     // Allocate data structures
     bool ok = true;
-    s->rat_position = int_alloc(nrat);
+    s->rat_position = short_alloc(nrat);
     ok = ok && s->rat_position != NULL;
 
-    s->next_position = int_alloc(nrat);
+    s->next_position = short_alloc(nrat);
     ok = ok && s->next_position != NULL;
 
     s->rat_seed = rt_alloc(nrat);
@@ -81,7 +85,7 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 
     if (!ok) {
 	outmsg("Couldn't allocate space for %d rats", nrat);
-	return NULL;
+	exit;
     }
 
     return s;

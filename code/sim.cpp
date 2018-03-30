@@ -153,8 +153,7 @@ static inline int next_random_move(state_t *s, int r) {
 //TODO: do based on domain
 static void process_batch(state_t *s, int bstart, int bcount) {
     graph_t *g = s->g;
-    int rid, nid, eid;
-    int nodes = g->nnode;
+    int rid, nid;
 
 #if MPI
     //divide rat batch among processors
@@ -184,7 +183,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     int erat = s->disp[s->process_id + 1];
 
     //broadcast current batch positions
-    MPI_Bcast(s->rat_position+ bstart, bcount, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(s->rat_position+ bstart, bcount, MPI_SHORT, 0, MPI_COMM_WORLD);
 
 #else
     int srat = bstart;
@@ -200,7 +199,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 #if MPI
     //all gather for the batch of rats
     MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-                   s->next_position, s->send, s->disp, MPI_INT, MPI_COMM_WORLD);
+                   s->next_position, s->send, s->disp, MPI_SHORT, MPI_COMM_WORLD);
 #endif
     for (rid = bstart; rid < bstart + bcount; rid++)
     {

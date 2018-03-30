@@ -100,8 +100,8 @@ typedef struct {
 
     /* State representation */
     // Node Id for each rat.  Length=R
-    int *rat_position;
-    int *next_position;
+    short *rat_position;
+    short *next_position;
     // Rat seeds.  Length = R
     random_t *rat_seed;
 

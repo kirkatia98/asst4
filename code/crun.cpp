@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 
 
 
-#if MPI
+#ifdef MPI
 #define DIM 2
 
         //DISPLACEMENTS AND SEND COUNTS
