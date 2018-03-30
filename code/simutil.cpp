@@ -16,16 +16,16 @@ void outmsg(const char *fmt, ...) {
 
 /* Allocate n int's and zero them out. */
 int *int_alloc(size_t n) {
-    return (int *) malloc(n* sizeof(int));
+    return (int *) calloc(n, sizeof(int));
 }
 short *short_alloc(size_t n)
 {
-    return (short*) malloc(n* sizeof(short));
+    return (short*) calloc(n, sizeof(short));
 }
 
 /* Allocate n doubles's and zero them out. */
 double *double_alloc(size_t n) {
-    return (double *) malloc(n* sizeof(double));
+    return (double *) calloc(n, sizeof(double));
 }
 
 /* Allocate n random number seeds and zero them out.  */
