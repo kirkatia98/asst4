@@ -45,9 +45,15 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 	return NULL;
     }
 
+#if MPI
+    MPI_Comm_size(MPI_COMM_WORLD, &s->nprocess);
+#else
+    s->nprocess = 1;
+#endif
+
     s->g = g;
     s->nrat = nrat;
-    s->nprocess = 1;
+
     s->process_id = 0;
     s->global_seed = global_seed;
     s->load_factor = (double) nrat / nnode;
@@ -76,10 +82,10 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     ok = ok && s->delta != NULL;
 
 #if MPI
-    s->send = int_alloc(s->nprocess);
+    s->send = int_alloc(s->nprocess+10);
     ok = ok && s->send != NULL;
 
-    s->disp = int_alloc(s->nprocess + 1);
+    s->disp = int_alloc(s->nprocess + 11);
     ok = ok && s->disp != NULL;
 #endif
 
