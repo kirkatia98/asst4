@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
 
         // Sum of counts. Used to calculate displacements
         int sum = 0;
-        int p, i, j;
+        int p;
 
 
         g->send = int_alloc(process_count);

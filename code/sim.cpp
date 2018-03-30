@@ -208,28 +208,18 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
 #if MPI
         if(snode <= onid && onid < enode)
-            s->delta[onid - snode]--;
+            s->local_rat_count[onid - snode]--;
         if(snode <= nnid && nnid < enode)
-            s->delta[nnid - snode]++;
+            s->local_rat_count[nnid - snode]++;
 #else
-        s->delta[onid]--;
-        s->delta[nnid]++;
+        s->rat_count[onid]--;
+        s->rat_count[nnid]++;
 #endif
         if(s->process_id == 0)
         {
             s->rat_position[rid] = nnid;
         }
     }
-    for(nid = 0; nid < s->my_nodes; nid++)
-    {
-#if MPI
-        s->local_rat_count[nid]+= s->delta[nid];
-#else
-        s->rat_count[nid]+= s->delta[nid];
-#endif
-        s->delta[nid] = 0;
-    }
-
 }
 
 static void run_step(state_t *s, int batch_size) {
