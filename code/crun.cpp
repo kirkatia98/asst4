@@ -182,97 +182,47 @@ int main(int argc, char *argv[]) {
         g->tiles_per_side = V->tiles_per_side;
 #endif
     }
-    //if nrow not divisible by tile size, just run on one processor
-    if(g->nrow % g->tile_size != 0)
-    {
-        s->nprocess = 1;
-
-    }
     s->nprocess = process_count;
     s->process_id = process_id;
 
 
-
 #if MPI
-#define DIM 2
 
-        //DISPLACEMENTS AND SEND COUNTS
-        //how many tiles each process computes
-        int per_process = (g->tiles_per_side) / s->nprocess;
+        //needed to figure out send and disp
+        MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        send_disp(s);
+        array_t* m = s->mpi;
 
-        // elements remaining after division among processes
-        int rem = (g->tiles_per_side) % s->nprocess;
+        //don't need all the neighbors (or all the gsums)
+        //MPI_Scatterv(g->neighbor, m->gsend, m->gdisp, MPI_INT,)
 
-        // Sum of counts. Used to calculate displacements
-        int sum = 0;
-        int p;
-
-
-        g->send = int_alloc(process_count);
-        g->disp = int_alloc(process_count + 1);
-
-        if(g->disp == NULL || g->send == NULL)
-        {
-            outmsg("Couldn't allocate storage for send and disp for graph\n");
-            return 1;
-        }
-
-        for (p = 0; p < s->nprocess; p++) {
-            g->send[p] = per_process;
-
-            if (rem > 0) {
-                g->send[p]++;
-                rem--;
-            }
-            g->send[p]*= g->nrow * g->tile_size;
-            g->disp[p] = sum;
-            sum += g->send[p];
-
-        }
-
-        //last process may get truncated chunck
-        g->disp[s->nprocess] = g->nnode;
-
-
-        //based on how many tile you were assigned, allocate continuous memory to
-        //receive initial rat position
-        s->my_nodes = g->disp[s->process_id + 1] - g->disp[s->process_id];
-
-        s->local_rat_count = int_alloc(s->my_nodes);
-        if(s->local_rat_count == NULL)
-            {
-                outmsg("Couldn't allocate storage for local\n");
-                return 1;
-            }
-
+        MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
 
         //RATS
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
 
-        //GRAPH
-        MPI_Bcast(g->neighbor, g->nnode + g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
+        //broadcast full only once, to determine where rats are
+        MPI_Bcast(s->rat_position, s->nrat, MPI_SHORT, 0, MPI_COMM_WORLD);
+
         MPI_Barrier(MPI_COMM_WORLD);
 
-
 #else
-    s->my_nodes = s->g->nnode;
-
+        s->my_nodes = g->nnode;
+        s->delta = int_alloc(s->my_nodes);
+        if(s->delta == NULL)
+        {
+            outmsg("Couldn't allocate storage for delta\n");
+        }
 #endif
 
-    s->delta = int_alloc(s->my_nodes);
-    if(s->delta == NULL)
-    {
-        outmsg("Couldn't allocate storage for delta\n");
-        return 1;
-    }
+
 
 #if MPI
 #if DEBUG
     DebugWait(s->process_id);
 #endif
     //scatter the rat counts one time only
-    MPI_Scatterv(s->rat_count, g->send, g->disp, MPI_INT,
+    MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
                 s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
 
 #endif

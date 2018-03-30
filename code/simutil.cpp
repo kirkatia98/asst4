@@ -78,15 +78,28 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
     s->rat_seed = rt_alloc(nrat);
     ok = ok && s->rat_seed != NULL;
 
-    s->delta = int_alloc(s->my_nodes);
-    ok = ok && s->delta != NULL;
-
 #if MPI
-    s->send = int_alloc(s->nprocess+10);
-    ok = ok && s->send != NULL;
+    array_t* m = (array_t*)malloc(sizeof(array_t));
+    ok = ok && m != NULL;
 
-    s->disp = int_alloc(s->nprocess + 11);
-    ok = ok && s->disp != NULL;
+    m->rsend = int_alloc(s->nprocess);
+    ok = ok && m->rsend != NULL;
+
+    m->rdisp = int_alloc(s->nprocess+1);
+    ok = ok && m->rdisp != NULL;
+
+    m->nsend = int_alloc(s->nprocess);
+    ok = ok && m->rsend != NULL;
+
+    m->ndisp = int_alloc(s->nprocess+1);
+    ok = ok && m->rdisp != NULL;
+
+    m->gsend = int_alloc(s->nprocess);
+    ok = ok && m->rsend != NULL;
+
+    m->gdisp = int_alloc(s->nprocess+1);
+    ok = ok && m->rdisp != NULL;
+    s->mpi = m;
 #endif
 
     if (!ok) {
@@ -95,6 +108,73 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 
     return s;
 }
+
+//DISPLACEMENTS AND SEND COUNTS
+void send_disp(state_t* s)
+{
+    array_t* m = s->mpi;
+    graph_t* g = s->g;
+
+    //divide rats, for synchronous mode only
+    int p;
+    int per_process = s->nrat/s->nprocess;
+    int rem =  s->nrat%s->nprocess;
+    int sum = 0;
+
+    m->rdisp[0] = 0;
+    for (p = 0; p < s->nprocess; p++) {
+        m->rsend[p] = per_process;
+
+        if (rem > 0) {
+            m->rsend[p]++;
+            rem--;
+        }
+        sum += m->rsend[p];
+        m->rdisp[p+1] = sum;
+    }
+
+    //divide nodes and gsums
+    per_process = (g->tiles_per_side) / s->nprocess;
+    rem = (g->tiles_per_side) % s->nprocess;
+    sum = 0;
+
+    for (p = 0; p < s->nprocess; p++) {
+        m->nsend[p] = per_process;
+
+        if (rem > 0) {
+            m->nsend[p]++;
+            rem--;
+        }
+
+
+        m->ndisp[p] = sum;
+        m->nsend[p] *= g->nrow * g->tile_size;
+
+        sum += m->nsend[p];
+    }
+    //last process may get truncated chunk
+    m->ndisp[s->nprocess] = g->nnode;
+    s->my_nodes = m->ndisp[s->process_id + 1] - m->ndisp[s->process_id];
+
+
+    //divide gsums based on nodes
+    for (p = 0; p < s->nprocess; p++) {
+
+        int snode = m->gdisp[p];
+        int enode = m->gsend[p+1];
+
+        m->gdisp[p] = g->neighbor_start[snode];
+        m->gsend[p] = m->gdisp[p] -  g->neighbor_start[enode];
+    }
+
+    s->local_rat_count = int_alloc(s->my_nodes);
+    s->delta = int_alloc(s->my_nodes);
+    if(s->local_rat_count == NULL || s->delta == NULL)
+    {
+        outmsg("Couldn't allocate storage for local or delta\n");
+    }
+}
+
 
 void free_state(state_t *s)
 {

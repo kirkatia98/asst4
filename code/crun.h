@@ -63,6 +63,18 @@ typedef struct {
     random_t global_seed;
 } init_vars;
 
+typedef struct {
+    //rats
+    int *rsend;
+    int *rdisp;
+    //nodes
+    int *nsend;
+    int *ndisp;
+    //gsum
+    int *gsend;
+    int *gdisp;
+}array_t;
+
 /* Representation of graph */
 typedef struct {
     /* General parameters */
@@ -72,11 +84,6 @@ typedef struct {
 
     int tile_size;  /* Maximum number of consecutive rows having non-grid connections */
     int tiles_per_side;
-
-#if MPI
-    int *send;
-    int *disp;
-#endif
 
     /* Graph structure representation */
     // Adjacency lists.  Includes self edge. Length=M+N.  Combined into single vector
@@ -122,12 +129,7 @@ typedef struct {
     int *rat_count;
     double *pre_computed;
 
-
-#if MPI
-    //all gather
-    int *send;
-    int *disp;
-#endif
+    array_t* mpi;
 
 } state_t;
     
