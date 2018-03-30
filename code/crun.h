@@ -161,6 +161,7 @@ short *short_alloc(size_t n);
 state_t *read_rats(graph_t *g, FILE *infile, random_t global_seed);
 state_t *new_rats(graph_t *g, int nrat, random_t global_seed);
 void free_state(state_t *s);
+void send_disp(state_t* s);
 
 /* Generate done message from simulator */
 void done();
