@@ -91,7 +91,6 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 
     if (!ok) {
 	outmsg("Couldn't allocate space for %d rats", nrat);
-	exit;
     }
 
     return s;
