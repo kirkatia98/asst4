@@ -47,14 +47,16 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 
 #if MPI
     MPI_Comm_size(MPI_COMM_WORLD, &s->nprocess);
+    MPI_Comm_rank(MPI_COMM_WORLD, &s->process_id);
 #else
     s->nprocess = 1;
+    s->process_id = 0;
 #endif
 
     s->g = g;
     s->nrat = nrat;
 
-    s->process_id = 0;
+
     s->global_seed = global_seed;
     s->load_factor = (double) nrat / nnode;
 
