@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
 #endif
     //scatter the rat counts one time only
     if(g->titles_per_side > 1)
-    MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
+        MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
                 s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
 
 #endif

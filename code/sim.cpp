@@ -266,7 +266,7 @@ static void run_step(state_t *s, int batch_size) {
         if(s->process_id == 0)
             take_census(s);
 #if MPI
-        if(g->titles_per_side > 1)
+        if(g->tiles_per_side > 1)
             MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 #endif
         if(batch_size == s->nrat)
