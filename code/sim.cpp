@@ -179,7 +179,7 @@ static void process_batch(state_t *s, int bstart, int bcount, int snode, int eno
                     s->process_id - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
-        if(enode < g->nnnode)
+        if(enode < g->nnode)
         {
             MPI_Send(s->rat_count + enode - g->nrow , g->nrow, MPI_INT,
                     s->process_id + 1, 0, MPI_COMM_WORLD);
@@ -192,7 +192,7 @@ static void process_batch(state_t *s, int bstart, int bcount, int snode, int eno
     }
     else
     {
-        if(enode < g->nnnode)
+        if(enode < g->nnode)
         {
             MPI_Recv(s->rat_count + enode, g->nrow, MPI_INT,
                     s->process_id + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
