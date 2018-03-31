@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
         MPI_Bcast(s->rat_seed, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
 
         //broadcast full only once, to determine where rats are
-        MPI_Bcast(s->rat_position, s->nrat, MPI_SHORT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(s->rat_position, s->nrat, MPI_INT, 0, MPI_COMM_WORLD);
 
         MPI_Barrier(MPI_COMM_WORLD);
 

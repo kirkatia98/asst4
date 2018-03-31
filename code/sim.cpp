@@ -222,7 +222,7 @@ static void process_rats(state_t *s, int bstart, int bcount) {
 #if MPI
     //all gather for the batch of rats
     MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-                   s->next_position, m->rsend, m->rdisp, MPI_SHORT,
+                   s->next_position, m->rsend, m->rdisp, MPI_INT,
                    MPI_COMM_WORLD);
 #endif
     for (rid = bstart; rid < bstart + bcount; rid++)
