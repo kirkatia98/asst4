@@ -256,7 +256,16 @@ static void run_step(state_t *s, int batch_size) {
         if(s->process_id == 0)
             take_census(s);
 #if MPI
-        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        //MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        if(s->process_id == 0)
+            MPI_Scatterv(g->gsums, m->gsend, m->gdisp, MPI_DOUBLE,
+                     MPI_IN_PLACE, s->my_nodes, MPI_INT,
+                     0, MPI_COMM_WORLD);
+        else
+            MPI_Scatterv(g->gsums, m->gsend, m->gdisp, MPI_DOUBLE,
+                     g->gsums + m->gdisp[s->process_id], s->my_nodes, MPI_INT,
+                     0, MPI_COMM_WORLD);
 #endif
         if(batch_size == s->nrat)
             process_rats(s, b, bcount);
