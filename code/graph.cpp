@@ -16,7 +16,7 @@ graph_t *new_graph(int nnode, int nedge, int tile_max) {
     g->tile_size = tile_max > 0 ? tile_max : g->nrow;
     g->nedge = nedge;
 
-    g->neighbor = int_alloc(nedge + nnode);
+    g->neighbor = int_alloc(nedge + nnode + 10);
     ok = ok && g->neighbor != NULL;
 
     g->neighbor_start = int_alloc(nedge);
