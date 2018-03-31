@@ -87,7 +87,7 @@ typedef struct {
 
     /* Graph structure representation */
     // Adjacency lists.  Includes self edge. Length=M+N.  Combined into single vector
-    short *neighbor;
+    int *neighbor;
     // Starting index for each adjacency list.  Length=N+1
     int *neighbor_start;
     double * gsums;         //accumulative sum of weights for self and neighbors
@@ -107,8 +107,8 @@ typedef struct {
 
     /* State representation */
     // Node Id for each rat.  Length=R
-    short *rat_position;
-    short *next_position;
+    int *rat_position;
+    int *next_position;
     // Rat seeds.  Length = R
     random_t *rat_seed;
 
