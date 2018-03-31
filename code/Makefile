@@ -1,10 +1,10 @@
 CC=g++
 
 MPI=-DMPI
-MPICC = mpicc
+MPICC = mpic++
 
-DEBUG=1
-CFLAGS=-g -O0 -Wall -DDEBUG=$(DEBUG)
+DEBUG=0
+CFLAGS=-O3 -std=c++0x -Wall -DDEBUG=$(DEBUG)
 LDFLAGS= -lm
 DDIR = ./data
 
