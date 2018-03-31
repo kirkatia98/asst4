@@ -188,7 +188,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
     for(nid = 0; nid < s->my_nodes; nid++)
     {
 #if MPI
-        if(s->tiles_per_side > 1)
+        if(g->tiles_per_side > 1)
             s->local_rat_count[nid]+= s->delta[nid];
         else
             s->rat_count[nid]+= s->delta[nid];
@@ -226,8 +226,8 @@ static void process_rats(state_t *s, int bstart, int bcount) {
 #if MPI
 
     //all gather for the batch of rats
-    if(s->titles_per_side > 1)
-    MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+    if(g->titles_per_side > 1)
+        MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
                    s->next_position, m->rsend, m->rdisp, MPI_INT,
                    MPI_COMM_WORLD);
 #endif
@@ -237,10 +237,14 @@ static void process_rats(state_t *s, int bstart, int bcount) {
         int nnid = s->next_position[rid];
 
 #if MPI
-        if(snode <= onid && onid < enode)
-            s->local_rat_count[onid - snode]--;
-        if(snode <= nnid && nnid < enode)
-            s->local_rat_count[nnid - snode]++;
+
+        if(g->tiles_per_side > 1)
+            if(snode <= onid && onid < enode)
+                s->local_rat_count[onid - snode]--;
+            if(snode <= nnid && nnid < enode)
+                s->local_rat_count[nnid - snode]++;
+        else
+            s->rat_count[nid]+= s->delta[nid];
 #else
         s->rat_count[onid]--;
         s->rat_count[nnid]++;
@@ -262,8 +266,8 @@ static void run_step(state_t *s, int batch_size) {
         if(s->process_id == 0)
             take_census(s);
 #if MPI
-        if(s->titles_per_side > 1)
-        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        if(g->titles_per_side > 1)
+            MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 #endif
         if(batch_size == s->nrat)
             process_rats(s, b, bcount);
@@ -272,8 +276,8 @@ static void run_step(state_t *s, int batch_size) {
 
 #if MPI
         //gather all the rat counts
-        if(s->tiles_per_side > 1)
-        MPI_Gatherv(s->local_rat_count, s->my_nodes, MPI_INT,
+        if(g->tiles_per_side > 1)
+            MPI_Gatherv(s->local_rat_count, s->my_nodes, MPI_INT,
                     s->rat_count, m->nsend, m->ndisp, MPI_INT,
                     0, MPI_COMM_WORLD);
 #endif

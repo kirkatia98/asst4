@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
 
 #if MPI
 
-    if(s->titles_per_side > 1)
+    if(g->titles_per_side > 1)
     {
         //needed to figure out send and disp
         MPI_Bcast(g->neighbor_start, g->nedge, MPI_INT, 0, MPI_COMM_WORLD);
@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
     DebugWait(s->process_id);
 #endif
     //scatter the rat counts one time only
-    if(s->titles_per_side > 1)
+    if(g->titles_per_side > 1)
     MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
                 s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
 
