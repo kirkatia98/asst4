@@ -329,6 +329,7 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
 
     s->update_mode = update_mode;
     graph_t* g = s->g;
+    array_t* m = s->mpi;
     int i;
     /* Compute and show initial state */
     bool show_counts = display;
