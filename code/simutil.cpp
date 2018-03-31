@@ -69,10 +69,13 @@ state_t *new_rats(graph_t *g, int nrat, random_t global_seed) {
 
     // Allocate data structures
     bool ok = true;
-    s->rat_position = short_alloc(nrat);
+    s->rat_position = int_alloc(nrat);
     ok = ok && s->rat_position != NULL;
 
-    s->next_position = short_alloc(nrat);
+    s->rat_count = int_alloc(nrat);
+    ok = ok && s->rat_count != NULL;
+
+    s->next_position = int_alloc(nrat);
     ok = ok && s->next_position != NULL;
 
     s->rat_seed = rt_alloc(nrat);
@@ -167,7 +170,10 @@ void send_disp(state_t* s)
         m->gsend[p] = m->gdisp[p] -  g->neighbor_start[enode];
     }
 
+    //save start of array
+    //s->local_rat_count = s->rat_count + m->ndisp[s->process_id];
     s->local_rat_count = int_alloc(s->my_nodes);
+
     s->delta = int_alloc(s->my_nodes);
     if(s->local_rat_count == NULL || s->delta == NULL)
     {

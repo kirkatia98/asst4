@@ -43,22 +43,34 @@ static void show_weights(state_t *s) {
 
 
 /* Recompute all node counts according to rat population */
-void take_census(state_t *s) {
+void take_census(state_t *s, int snode, int enode) {
     graph_t *g = s->g;
-    int nnode = g->nnode;
+
+    int nid, eid, count;
 
 
+#if MPI
+    //extend the bounds
+    if(snode != 0)
+    {
+        snode -= g->nrow;
+    }
+    if(enode -= g->nnode)
+    {
+        enode += g->nrow;
+    }
+#endif
 
     //for each node, fill in its weight in the self edge index
-    int nid, eid;
-    for (nid = 0; nid < nnode; nid++)
+    for (nid = snode; nid < enode; nid++)
     {
         eid = g->neighbor_start[nid];
-        g->gsums[eid] = compute_weight(s, nid);
+        count = s->rat_count[nid];
+        g->gsums[eid] = s->pre_computed[count];
     }
 
     //for each node fill in the accumulation of the weights of its neighbors
-    for (nid = 0; nid < nnode; nid++)
+    for (nid = snode; nid < enode; nid++)
     {
         double sum = 0;
         for (eid = g->neighbor_start[nid]; eid < g->neighbor_start[nid+1]; eid++)
@@ -151,14 +163,53 @@ static inline int next_random_move(state_t *s, int r) {
 }
 
 //TODO: do based on domain
-static void process_batch(state_t *s, int bstart, int bcount) {
+static void process_batch(state_t *s, int bstart, int bcount, int snode, int enode)  {
     graph_t *g = s->g;
     int rid, nid;
 
 #if MPI
-    array_t* m = s->mpi;
-    int snode = m->ndisp[s->process_id];
-    int enode = m->ndisp[s->process_id + 1];
+    //send and recieve
+    if(s->process_id % 2 == 0)
+    {
+        if(snode > 0)
+        {
+            MPI_Send(s->rat_count + snode, g->nrow, MPI_INT,
+                    s->process_id - 1, 0, MPI_COMM_WORLD);
+            MPI_Recv(s->rat_count + snode - g->nrow, g->nrow, MPI_INT,
+                    s->process_id - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        if(enode < g->nnnode)
+        {
+            MPI_Send(s->rat_count + enode - g->nrow , g->nrow, MPI_INT,
+                    s->process_id + 1, 0, MPI_COMM_WORLD);
+            MPI_Recv(s->rat_count + enode, g->nrow, MPI_INT,
+                    s->process_id + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+
+
+    }
+    else
+    {
+        if(enode < g->nnnode)
+        {
+            MPI_Recv(s->rat_count + enode, g->nrow, MPI_INT,
+                    s->process_id + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(s->rat_count + enode - g->nrow , g->nrow, MPI_INT,
+                    s->process_id + 1, 0, MPI_COMM_WORLD);
+
+        }
+        if(snode > 0)
+        {
+            MPI_Recv(s->rat_count + snode - g->nrow, g->nrow, MPI_INT,
+                    s->process_id - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(s->rat_count + snode, g->nrow, MPI_INT,
+                    s->process_id - 1, 0, MPI_COMM_WORLD);
+
+        }
+    }
+    take_census(s,snode, enode);
 #endif
 
     //for each rat compute the next positions (every processes)
@@ -186,25 +237,28 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 
     for(nid = 0; nid < s->my_nodes; nid++)
     {
-#if MPI
-        s->local_rat_count[nid]+= s->delta[nid];
-#else
-        s->rat_count[nid]+= s->delta[nid];
-#endif
+        s->rat_count[snode + nid]+= s->delta[nid];
         s->delta[nid] = 0;
     }
 }
 
 
 //TODO: do based on domain
-static void process_rats(state_t *s, int bstart, int bcount) {
+static void process_rats(state_t *s, int bstart, int bcount, int snode, int enode) {
     graph_t *g = s->g;
     int rid, nid;
 
 #if MPI
+
+    if(s->process_id == 0)
+    {
+        take_census(s,0,g->nnode);
+        //to split next move among processes, needs full copy of bsum
+        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    }
+
+    //figure out work division
     array_t* m = s->mpi;
-    int snode = m->ndisp[s->process_id];
-    int enode = m->ndisp[s->process_id + 1];
 
     int srat = m->rdisp[s->process_id];
     int erat = m->rdisp[s->process_id + 1];
@@ -217,7 +271,7 @@ static void process_rats(state_t *s, int bstart, int bcount) {
     //for each rat compute the next positions
     for (rid = srat; rid < erat; rid++)
     {
-        s->next_position[rid] = next_random_move(s, rid); 
+        s->next_position[rid] = next_random_move(s, rid);
     }
 #if MPI
     //all gather for the batch of rats
@@ -230,15 +284,9 @@ static void process_rats(state_t *s, int bstart, int bcount) {
         int onid = s->rat_position[rid];
         int nnid = s->next_position[rid];
 
-#if MPI
-        if(snode <= onid && onid < enode)
-            s->local_rat_count[onid - snode]--;
-        if(snode <= nnid && nnid < enode)
-            s->local_rat_count[nnid - snode]++;
-#else
         s->rat_count[onid]--;
         s->rat_count[nnid]++;
-#endif
+
         s->rat_position[rid] = nnid;
     }
 }
@@ -248,27 +296,30 @@ static void run_step(state_t *s, int batch_size) {
     graph_t* g = s->g;
     array_t* m = s->mpi;
 
+    int snode, enode;
+
     for (b = 0; b < s->nrat; b += batch_size) {
         int rest = s->nrat - b;
         bcount = rest < batch_size ? rest : batch_size;
 
-        //update gsums and distribute
-        if(s->process_id == 0)
-            take_census(s);
 #if MPI
-        MPI_Bcast(g->gsums, g->nnode + g->nedge, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        array_t* m = s->mpi;
+        snode = m->ndisp[s->process_id];
+        enode = m->ndisp[s->process_id + 1];
+#else
+        snode = 0;
+        enode = g->nnode;
+        take_census(s,snode, enode);
 #endif
-        if(batch_size == s->nrat)
-            process_rats(s, b, bcount);
-        else
-            process_batch(s, b, bcount);
 
-#if MPI
-        //gather all the rat counts
-        MPI_Gatherv(s->local_rat_count, s->my_nodes, MPI_INT,
-                    s->rat_count, m->nsend, m->ndisp, MPI_INT,
-                    0, MPI_COMM_WORLD);
-#endif
+
+
+        if(batch_size == s->nrat)
+            process_rats(s, b, bcount, snode, enode);
+        else
+            process_batch(s, b, bcount, snode, enode);
+
+
 
     }
 }
@@ -301,6 +352,18 @@ void simulate(state_t *s, int count, update_t update_mode, int dinterval, bool d
 
 
     if (display && mpi_master) {
+#if MPI
+        //gather all the rat counts
+        if(s->process_id == 0)
+            MPI_Gatherv(MPI_IN_PLACE, s->my_nodes, MPI_INT,
+                        s->rat_count, m->nsend, m->ndisp, MPI_INT,
+                        0, MPI_COMM_WORLD);
+        else
+            MPI_Gatherv(s->rat_count + m->ndisp[s->process_id], s->my_nodes, MPI_INT,
+                        s->rat_count, m->nsend, m->ndisp, MPI_INT,
+                        0, MPI_COMM_WORLD);
+
+#endif
 	    show(s, show_counts);
     }
 

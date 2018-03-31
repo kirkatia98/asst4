@@ -222,8 +222,14 @@ int main(int argc, char *argv[]) {
     DebugWait(s->process_id);
 #endif
     //scatter the rat counts one time only
-    MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
-                s->local_rat_count, s->my_nodes, MPI_INT, 0, MPI_COMM_WORLD);
+    if(s->process_id == 0)
+        MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
+                MPI_IN_PLACE, s->my_nodes, MPI_INT,
+                0, MPI_COMM_WORLD);
+    else
+        MPI_Scatterv(s->rat_count, m->nsend, m->ndisp, MPI_INT,
+                s->rat_count + m->ndisp[s->process_id], s->my_nodes, MPI_INT,
+                0, MPI_COMM_WORLD);
 
 #endif
 
