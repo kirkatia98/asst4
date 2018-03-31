@@ -114,15 +114,16 @@ void send_disp(state_t* s)
 {
     array_t* m = s->mpi;
     graph_t* g = s->g;
+    int ideal = 4;
 
     //divide rats, for synchronous mode only
     int p;
-    int per_process = s->nrat/s->nprocess;
+    int per_process = s->nrat/ideal;
     int rem =  s->nrat%s->nprocess;
     int sum = 0;
 
     m->rdisp[0] = 0;
-    for (p = 0; p < s->nprocess; p++) {
+    for (p = 0; p < ideal; p++) {
         m->rsend[p] = per_process;
 
         if (rem > 0) {
@@ -134,11 +135,11 @@ void send_disp(state_t* s)
     }
 
     //divide nodes and gsums
-    per_process = (g->tiles_per_side) / s->nprocess;
+    per_process = (g->tiles_per_side) /ideal;
     rem = (g->tiles_per_side) % s->nprocess;
     sum = 0;
 
-    for (p = 0; p < s->nprocess; p++) {
+    for (p = 0; p < ideal; p++) {
         m->nsend[p] = per_process;
 
         if (rem > 0) {
@@ -153,18 +154,25 @@ void send_disp(state_t* s)
         sum += m->nsend[p];
     }
     //last process may get truncated chunk
-    m->ndisp[s->nprocess] = g->nnode;
+    m->ndisp[ideal] = g->nnode;
     s->my_nodes = m->ndisp[s->process_id + 1] - m->ndisp[s->process_id];
 
 
     //divide gsums based on nodes
-    for (p = 0; p < s->nprocess; p++) {
+    for (p = 0; p < ideal; p++) {
 
         int snode = m->gdisp[p];
         int enode = m->gsend[p+1];
 
         m->gdisp[p] = g->neighbor_start[snode];
         m->gsend[p] = m->gdisp[p] -  g->neighbor_start[enode];
+    }
+
+    for(p = ideal; p < s->nprocess; p++)
+    {
+        m->gdisp[p]= g->neighbor_start[g->nnode];
+        m->ndisp[p] = g->nnode;
+        m->rdisp[p] = s->nrat;
     }
 
     s->local_rat_count = int_alloc(s->my_nodes);
