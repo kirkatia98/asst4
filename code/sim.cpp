@@ -190,7 +190,7 @@ static void process_batch(state_t *s, int bstart, int bcount) {
 #if MPI
         if(g->tiles_per_side > 1)
             s->local_rat_count[nid]+= s->delta[nid];
-        else
+        else if(s->process_id == 0)
             s->rat_count[nid]+= s->delta[nid];
 #else
         s->rat_count[nid]+= s->delta[nid];
@@ -243,7 +243,7 @@ static void process_rats(state_t *s, int bstart, int bcount) {
                 s->local_rat_count[onid - snode]--;
             if(snode <= nnid && nnid < enode)
                 s->local_rat_count[nnid - snode]++;
-        else
+        else if(s->process_id == 0)
             s->rat_count[nid]+= s->delta[nid];
 #else
         s->rat_count[onid]--;
